@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/krmcbride/mcp-k8s/internal/k8s"
+	"github.com/krmcbride/mcp-k8s/internal/tools/mapper"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,12 +66,15 @@ func listResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	// Convert GVK to GVR
-	gvr, err := k8s.GVKToGVR(params.Context, schema.GroupVersionKind{
+	// Create GVK
+	gvk := schema.GroupVersionKind{
 		Group:   params.Group,
 		Version: params.Version,
 		Kind:    params.Kind,
-	})
+	}
+
+	// Convert GVK to GVR
+	gvr, err := k8s.GVKToGVR(params.Context, gvk)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -95,8 +99,8 @@ func listResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 		}
 	}
 
-	// Map to GenericListContent
-	content := mapToGenericListContent(list)
+	// Map to appropriate content structure
+	content := mapToListContent(list, gvk)
 
 	// Return as JSON
 	return toJSONToolResult(content)
@@ -122,13 +126,20 @@ func extractListResourcesParams(request mcp.CallToolRequest) (*listResourcesPara
 	}, nil
 }
 
-func mapToGenericListContent(list *unstructured.UnstructuredList) []GenericListContent {
-	content := make([]GenericListContent, 0, len(list.Items))
+func mapToListContent(list *unstructured.UnstructuredList, gvk schema.GroupVersionKind) []interface{} {
+	content := make([]interface{}, 0, len(list.Items))
+
+	// Get the appropriate mapper for this resource type
+	resourceMapper, hasCustomMapper := mapper.Get(gvk)
+
 	for _, item := range list.Items {
-		content = append(content, GenericListContent{
-			Name:      item.GetName(),
-			Namespace: item.GetNamespace(),
-		})
+		if hasCustomMapper {
+			// Use custom mapper
+			content = append(content, resourceMapper(item))
+		} else {
+			// Fall back to generic mapper
+			content = append(content, mapper.MapGenericResource(item))
+		}
 	}
 	return content
 }
