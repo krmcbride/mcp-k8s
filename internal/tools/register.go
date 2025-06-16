@@ -12,4 +12,5 @@ func RegisterTools(s *server.MCPServer) {
 	// Register tools
 	RegisterHelloworldTool(s)
 	RegisterListResourcesTool(s)
+	RegisterGetResourceTool(s)
 }
