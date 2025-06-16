@@ -65,15 +65,12 @@ func listResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	// Create GVK (GroupVersionKind) to find the proper resource
-	gvk := schema.GroupVersionKind{
+	// Convert GVK to GVR
+	gvr, err := k8s.GVKToGVR(params.Context, schema.GroupVersionKind{
 		Group:   params.Group,
 		Version: params.Version,
 		Kind:    params.Kind,
-	}
-
-	// Convert GVK to GVR
-	gvr, err := k8s.GVKToGVR(params.Context, gvk)
+	})
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -99,24 +96,10 @@ func listResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	}
 
 	// Map to GenericListContent
-	content := make([]GenericListContent, 0, len(list.Items))
-	for _, item := range list.Items {
-		name := item.GetName()
-		namespace := item.GetNamespace()
+	content := mapToGenericListContent(list)
 
-		content = append(content, GenericListContent{
-			Name:      name,
-			Namespace: namespace,
-		})
-	}
-
-	jsonContent, err := json.Marshal(content)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	// JSON encode the content list
-	return mcp.NewToolResultText(string(jsonContent)), nil
+	// Return as JSON
+	return toJSONToolResult(content)
 }
 
 func extractListResourcesParams(request mcp.CallToolRequest) (*listResourcesParams, error) {
@@ -137,4 +120,23 @@ func extractListResourcesParams(request mcp.CallToolRequest) (*listResourcesPara
 		Version:   request.GetString(versionProperty, "v1"),
 		Kind:      kind,
 	}, nil
+}
+
+func mapToGenericListContent(list *unstructured.UnstructuredList) []GenericListContent {
+	content := make([]GenericListContent, 0, len(list.Items))
+	for _, item := range list.Items {
+		content = append(content, GenericListContent{
+			Name:      item.GetName(),
+			Namespace: item.GetNamespace(),
+		})
+	}
+	return content
+}
+
+func toJSONToolResult(content interface{}) (*mcp.CallToolResult, error) {
+	jsonContent, err := json.Marshal(content)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	return mcp.NewToolResultText(string(jsonContent)), nil
 }
