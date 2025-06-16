@@ -114,7 +114,7 @@ mcp-shell: install-mcptools ## Run the MCP server with mcptools shell
 
 .PHONY: test
 test: ## Run tests.
-	go test ./...
+	go test -v ./...
 
 
 ##@ Build
