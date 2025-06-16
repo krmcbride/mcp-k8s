@@ -10,7 +10,6 @@ func RegisterTools(s *server.MCPServer) {
 	mapper.Init()
 
 	// Register tools
-	RegisterHelloworldTool(s)
 	RegisterListResourcesTool(s)
 	RegisterGetResourceTool(s)
 }
