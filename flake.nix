@@ -19,7 +19,10 @@
         devShell = pkgs.mkShellNoCC{
           name = "mcp-k8s";
           nativeBuildInputs = with pkgs; [
+            awscli2
+            aws-vault
             go
+            k9s
           ];
           CGO_ENABLED = 0;
         };
