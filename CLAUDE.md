@@ -1,0 +1,140 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is an MCP (Model Context Protocol) server that provides tools for interacting with Kubernetes clusters. The server exposes Kubernetes operations through MCP tools that can be used by Claude and other MCP clients.
+
+## Key Commands
+
+### Development
+
+- `make test` - Run all tests
+- `go test ./internal/tools/mapper -v` - Run mapper tests specifically
+- `go test ./internal/tools/mapper -v -run TestName` - Run specific test
+- `make build` - Build the MCP server binary
+- `make fmt` - Format code (runs gofumpt and goimports-reviser)
+- `make lint` - Run golangci-lint
+
+### MCP Development
+
+- `make mcp-shell` - Run the MCP server interactively with mcptools shell for testing
+
+### CI Commands
+
+- `make test-ci` - Run tests with coverage
+- `make lint-ci` - Run linters for CI
+- `make format-ci` - Check formatting in CI
+
+## Architecture
+
+### Core Components
+
+**MCP Server Entry Point** (`cmd/server/main.go`)
+
+- Creates MCP server instance using mark3labs/mcp-go
+- Registers all tools via `tools.RegisterTools()`
+- Serves over stdio protocol
+
+**Tool Registration** (`internal/tools/register.go`)
+
+- Central registration point for all MCP tools
+- Initializes resource mappers before registering tools
+- Currently registers: hello tool and list_resources tool
+
+**Kubernetes Client Layer** (`internal/k8s/`)
+
+- `client.go`: Kubernetes client factory with context switching support
+- `gvr.go`: GVK (GroupVersionKind) to GVR (GroupVersionResource) conversion using REST mapper
+
+**Resource Mapping System** (`internal/tools/mapper/`)
+
+- Extensible system for converting Kubernetes unstructured resources into structured output
+- Case-insensitive Kind lookup with automatic normalization
+- Auto-registration via init() functions in individual resource files
+
+### Key Design Patterns
+
+**Resource Mapper Registration**
+Each resource type (pod.go, deployment.go, etc.) auto-registers its mapper in an init() function:
+
+```go
+func init() {
+    Register(schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"}, mapDeploymentResource)
+}
+```
+
+**Case-Insensitive GVK Normalization**
+The mapper system normalizes Kind names to title case for consistent map keys, allowing users to specify "pod", "Pod", or "POD" interchangeably.
+
+**Dynamic Client Usage**
+Uses Kubernetes dynamic client instead of typed clientset to work with any resource type (including CRDs) without code generation.
+
+## Resource Mappers
+
+Currently implemented mappers for:
+
+- Pod, Deployment, DaemonSet, StatefulSet, Job, CronJob (workloads)
+- Service, Ingress (networking)
+- Node (infrastructure)
+
+Each mapper extracts resource-specific fields (e.g., replica counts, status, networking details) rather than just name/namespace.
+
+## Adding New Resource Mappers
+
+1. Create new file in `internal/tools/mapper/` (e.g., `configmap.go`)
+2. Define content struct with json tags
+3. Implement mapper function extracting relevant fields from unstructured data
+4. Add init() function to register the mapper
+5. Update integration test in `integration_test.go`
+
+## Testing Strategy
+
+- Comprehensive unit tests in `mapper_test.go` covering case variations and edge cases
+- Integration test in `integration_test.go` verifying all expected mappers are registered
+- Tests clear the mapper registry to ensure isolation between test cases
+
+## Kubernetes Integration
+
+The system uses kubeconfig contexts for cluster access. The GVKToGVR function handles:
+
+- Context-specific client creation
+- REST mapper discovery for accurate Kind → Resource conversion
+- Support for built-in resources and CRDs
+
+## Development Best Practices
+
+### Architecture-First Approach
+
+When implementing new features, start with architectural planning:
+
+- Identify key interfaces and integration points
+- Consider consistency requirements across related operations (e.g., registration and lookup)
+- Anticipate potential edge cases and normalization needs
+
+### Documentation-Driven Development
+
+- Write comprehensive comments for public APIs during implementation, not after
+- Explain design decisions and component relationships
+- Include usage examples for complex interfaces
+
+### Test-Driven Validation
+
+- Propose and implement tests early in the feature development process
+- Use tests to validate design assumptions and catch integration issues
+- Test edge cases like case variations, empty inputs, and error conditions
+
+### Consistency Validation
+
+When implementing related operations (like mapper registration and lookup):
+
+- Ensure the same normalization/transformation is applied in all related functions
+- Test that different input variations (case, format) work consistently
+- Verify that registration and retrieval use identical key generation logic
+
+## Dependencies
+
+- `k8s.io/client-go`: Kubernetes Go client library
+- `k8s.io/apimachinery`: Core Kubernetes types and utilities
+- `github.com/mark3labs/mcp-go`: MCP protocol implementation
