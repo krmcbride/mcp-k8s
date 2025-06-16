@@ -28,11 +28,13 @@ endef
 GOIMPORTS_REVISER = $(LOCALBIN)/goimports-reviser
 GOFUMPT = $(LOCALBIN)/gofumpt
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
+MCPTOOLS = $(LOCALBIN)/mcptools
 
 ## Tool Versions
 GOIMPORTS_REVISER_VERSION = v3.6.4
 GOFUMPT_VERSION = v0.8.0
 GOLANGCI_LINT_VERSION = v2.1.6
+MCPTOOLS_VERSION = v0.7.1
 
 GOIMPORTS_REVISER_ARGS = -project-name github.com/krmcbride/mcp-k8s
 
@@ -77,9 +79,14 @@ $(GOFUMPT): $(LOCALBIN)
 install-golangci-lint: $(GOLANGCI_LINT) ## Install golangci-lint
 $(GOLANGCI_LINT): $(LOCALBIN)
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+ 
+.PHONY: install-mcptools
+install-mcptools: $(MCPTOOLS) ## Install golangci-lint
+$(MCPTOOLS): $(LOCALBIN)
+	$(call go-install-tool,$(MCPTOOLS),github.com/f/mcptools/cmd/mcptools,$(MCPTOOLS_VERSION))
 
 .PHONY: install-tools
-install-tools: install-goimports-reviser install-gofumpt install-golangci-lint ## download dependencies for CI in one shot
+install-tools: install-goimports-reviser install-gofumpt install-golangci-lint install-mcptools ## download dependencies in one shot
  
 
 ##@ Development
@@ -100,6 +107,10 @@ goimports-reviser: install-goimports-reviser ## Format code and fix imports.
 .PHONY: lint
 lint: install-golangci-lint ## Run golangci-lint against code.
 	$(GOLANGCI_LINT) run
+
+.PHONY: mcp-shell
+mcp-shell: install-mcptools ## Run the MCP server with mcptools shell
+	$(MCPTOOLS) shell go run cmd/server/main.go
 
 .PHONY: test
 test: ## Run tests.
