@@ -65,17 +65,23 @@ func listResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	// Create dynamic client using the k8s context utilities
+	// Create GVK (GroupVersionKind) to find the proper resource
+	gvk := schema.GroupVersionKind{
+		Group:   params.Group,
+		Version: params.Version,
+		Kind:    params.Kind,
+	}
+
+	// Convert GVK to GVR
+	gvr, err := k8s.GVKToGVR(params.Context, gvk)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	// Get dynamic client
 	dynamicClient, err := k8s.GetDynamicClientForContext(params.Context)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to create dynamic client: %v", err)), nil
-	}
-
-	// Create GVR (GroupVersionResource)
-	gvr := schema.GroupVersionResource{
-		Group:    params.Group,
-		Version:  params.Version,
-		Resource: params.Kind + "s", // Simple pluralization for now
 	}
 
 	// List resources
