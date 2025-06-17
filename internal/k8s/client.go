@@ -8,6 +8,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
+	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
 // k8sClients bundles together Kubernetes clients needed for dynamic operations.
@@ -38,6 +39,36 @@ func GetDynamicClientForContext(k8sContext string) (dynamic.Interface, error) {
 		return nil, err
 	}
 	return clients.dynamic, nil
+}
+
+// GetMetricsClientForContext creates a Kubernetes metrics client for the specified context.
+// A metrics client provides access to CPU and memory usage metrics for nodes and pods.
+//
+// Parameters:
+//   - k8sContext: The name of the kubeconfig context to use. If empty, uses the current context.
+//
+// Returns:
+//   - A metrics client interface for retrieving resource usage metrics
+//   - An error if the client creation fails (e.g., invalid context, metrics server unavailable)
+//
+// Example usage:
+//
+//	client, err := GetMetricsClientForContext("production")
+//	podMetrics, err := client.MetricsV1beta1().PodMetricses("default").List(metav1.ListOptions{})
+func GetMetricsClientForContext(k8sContext string) (metrics.Interface, error) {
+	kubeConfig := getKubeConfigForContext(k8sContext)
+
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	metricsClient, err := metrics.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return metricsClient, nil
 }
 
 // Helper that creates both a dynamic client and REST mapper for a specific Kubernetes context.

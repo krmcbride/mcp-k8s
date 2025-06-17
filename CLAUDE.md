@@ -53,7 +53,7 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 
 - Central registration point for all MCP tools
 - Initializes resource mappers before registering tools
-- Currently registers: list_k8s_resources and get_k8s_resource tools
+- Currently registers: list_k8s_resources, get_k8s_resource, and get_k8s_metrics tools
 
 **Kubernetes Client Layer** (`internal/k8s/`)
 
