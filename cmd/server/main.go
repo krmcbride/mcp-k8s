@@ -17,9 +17,9 @@ func main() {
 		server.WithToolCapabilities(false),
 	)
 
-	prompts.RegisterPrompts(s)
-	resources.RegisterResources(s)
-	tools.RegisterTools(s)
+	prompts.RegisterMCPPrompts(s)
+	resources.RegisterMCPResources(s)
+	tools.RegisterMCPTools(s)
 
 	if err := server.ServeStdio(s); err != nil {
 		fmt.Printf("Server error: %v\n", err)

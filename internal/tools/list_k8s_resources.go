@@ -2,11 +2,9 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/krmcbride/mcp-k8s/internal/k8s"
-	"github.com/krmcbride/mcp-k8s/internal/tools/mapper"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +20,7 @@ const (
 	kindProperty      = "kind"
 )
 
-type listResourcesParams struct {
+type listK8sResourcesParams struct {
 	Context   string
 	Namespace string
 	Group     string
@@ -30,13 +28,13 @@ type listResourcesParams struct {
 	Kind      string
 }
 
-func RegisterListResourcesTool(s *server.MCPServer) {
-	s.AddTool(newListResourcesTool(), listResourcesHandler)
+func RegisterListK8sResourcesMCPTool(s *server.MCPServer) {
+	s.AddTool(newListK8sResourcesMCPTool(), listK8sResourcesHandler)
 }
 
 // Tool schema
-func newListResourcesTool() mcp.Tool {
-	return mcp.NewTool("list_resources",
+func newListK8sResourcesMCPTool() mcp.Tool {
+	return mcp.NewTool("list_k8s_resources",
 		mcp.WithDescription("List Kubernetes resources"),
 		mcp.WithString(contextProperty,
 			mcp.Description("The Kubernetes context to use."),
@@ -59,9 +57,9 @@ func newListResourcesTool() mcp.Tool {
 }
 
 // Tool handler
-func listResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func listK8sResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract and validate parameters
-	params, err := extractListResourcesParams(request)
+	params, err := extractListK8sResourcesParams(request)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -100,13 +98,13 @@ func listResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	}
 
 	// Map to appropriate content structure
-	content := mapToListContent(list, gvk)
+	content := mapToK8sResourceListContent(list, gvk)
 
 	// Return as JSON
 	return toJSONToolResult(content)
 }
 
-func extractListResourcesParams(request mcp.CallToolRequest) (*listResourcesParams, error) {
+func extractListK8sResourcesParams(request mcp.CallToolRequest) (*listK8sResourcesParams, error) {
 	context, err := request.RequireString(contextProperty)
 	if err != nil {
 		return nil, err
@@ -117,37 +115,11 @@ func extractListResourcesParams(request mcp.CallToolRequest) (*listResourcesPara
 		return nil, err
 	}
 
-	return &listResourcesParams{
+	return &listK8sResourcesParams{
 		Context:   context,
 		Namespace: request.GetString(namespaceProperty, metav1.NamespaceAll),
 		Group:     request.GetString(groupProperty, ""),
 		Version:   request.GetString(versionProperty, "v1"),
 		Kind:      kind,
 	}, nil
-}
-
-func mapToListContent(list *unstructured.UnstructuredList, gvk schema.GroupVersionKind) []interface{} {
-	content := make([]interface{}, 0, len(list.Items))
-
-	// Get the appropriate mapper for this resource type
-	resourceMapper, hasCustomMapper := mapper.Get(gvk)
-
-	for _, item := range list.Items {
-		if hasCustomMapper {
-			// Use custom mapper
-			content = append(content, resourceMapper(item))
-		} else {
-			// Fall back to generic mapper
-			content = append(content, mapper.MapGenericResource(item))
-		}
-	}
-	return content
-}
-
-func toJSONToolResult(content interface{}) (*mcp.CallToolResult, error) {
-	jsonContent, err := json.Marshal(content)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-	return mcp.NewToolResultText(string(jsonContent)), nil
 }

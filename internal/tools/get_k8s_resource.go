@@ -7,7 +7,6 @@ import (
 	"text/template"
 
 	"github.com/krmcbride/mcp-k8s/internal/k8s"
-	"github.com/krmcbride/mcp-k8s/internal/tools/mapper"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +19,7 @@ const (
 	goTemplateProperty = "go_template"
 )
 
-type getResourceParams struct {
+type getK8sResourceParams struct {
 	Context    string
 	Name       string
 	Namespace  string
@@ -30,13 +29,13 @@ type getResourceParams struct {
 	GoTemplate string
 }
 
-func RegisterGetResourceTool(s *server.MCPServer) {
-	s.AddTool(newGetResourceTool(), getResourceHandler)
+func RegisterGetK8sResourceMCPTool(s *server.MCPServer) {
+	s.AddTool(newGetK8sResourceMCPTool(), getK8sResourceHandler)
 }
 
 // Tool schema
-func newGetResourceTool() mcp.Tool {
-	return mcp.NewTool("get_resource",
+func newGetK8sResourceMCPTool() mcp.Tool {
+	return mcp.NewTool("get_k8s_resource",
 		mcp.WithDescription("Get a single Kubernetes resource with optional Go template formatting"),
 		mcp.WithString(contextProperty,
 			mcp.Description("The Kubernetes context to use."),
@@ -66,9 +65,9 @@ func newGetResourceTool() mcp.Tool {
 }
 
 // Tool handler
-func getResourceHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func getK8sResourceHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract and validate parameters
-	params, err := extractGetResourceParams(request)
+	params, err := extractGetK8sResourceParams(request)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -114,13 +113,13 @@ func getResourceHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 	}
 
 	// Map to appropriate content structure using custom mappers
-	content := mapToResourceContent(resource, gvk)
+	content := mapToK8sResourceContent(resource, gvk)
 
 	// Return as JSON
 	return toJSONToolResult(content)
 }
 
-func extractGetResourceParams(request mcp.CallToolRequest) (*getResourceParams, error) {
+func extractGetK8sResourceParams(request mcp.CallToolRequest) (*getK8sResourceParams, error) {
 	context, err := request.RequireString(contextProperty)
 	if err != nil {
 		return nil, err
@@ -136,7 +135,7 @@ func extractGetResourceParams(request mcp.CallToolRequest) (*getResourceParams, 
 		return nil, err
 	}
 
-	return &getResourceParams{
+	return &getK8sResourceParams{
 		Context:    context,
 		Name:       name,
 		Namespace:  request.GetString(namespaceProperty, ""),
@@ -145,19 +144,6 @@ func extractGetResourceParams(request mcp.CallToolRequest) (*getResourceParams, 
 		Kind:       kind,
 		GoTemplate: request.GetString(goTemplateProperty, ""),
 	}, nil
-}
-
-func mapToResourceContent(resource *unstructured.Unstructured, gvk schema.GroupVersionKind) interface{} {
-	// Get the appropriate mapper for this resource type
-	resourceMapper, hasCustomMapper := mapper.Get(gvk)
-
-	if hasCustomMapper {
-		// Use custom mapper
-		return resourceMapper(*resource)
-	} else {
-		// Fall back to generic mapper
-		return mapper.MapGenericResource(*resource)
-	}
 }
 
 func applyGoTemplate(resource *unstructured.Unstructured, templateStr string) (*mcp.CallToolResult, error) {

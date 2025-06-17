@@ -17,19 +17,19 @@ type KubeContext struct {
 	IsCurrent   bool   `json:"isCurrent"`
 }
 
-func RegisterContextsResource(s *server.MCPServer) {
-	s.AddResource(newContextsResource(), contextsHandler)
+func RegisterK8sContextsMCPResource(s *server.MCPServer) {
+	s.AddResource(newK8sContextsMCPResource(), k8sContextsHandler)
 }
 
 // Resource schema
-func newContextsResource() mcp.Resource {
+func newK8sContextsMCPResource() mcp.Resource {
 	return mcp.NewResource("k8s://contexts", "k8s_contexts",
 		mcp.WithResourceDescription("List of available Kubernetes contexts from kubeconfig"),
 	)
 }
 
 // Resource handler
-func contextsHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+func k8sContextsHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	// Load kubeconfig using the same rules as our k8s client
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	config, err := loadingRules.Load()

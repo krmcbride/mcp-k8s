@@ -5,11 +5,11 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-func RegisterTools(s *server.MCPServer) {
+func RegisterMCPTools(s *server.MCPServer) {
 	// Initialize resource mappers
 	mapper.Init()
 
 	// Register tools
-	RegisterListResourcesTool(s)
-	RegisterGetResourceTool(s)
+	RegisterListK8sResourcesMCPTool(s)
+	RegisterGetK8sResourceMCPTool(s)
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-func RegisterResources(s *server.MCPServer) {
+func RegisterMCPResources(s *server.MCPServer) {
 	// Register resources
-	RegisterContextsResource(s)
+	RegisterK8sContextsMCPResource(s)
 }

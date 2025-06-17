@@ -43,14 +43,17 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 **MCP Server Entry Point** (`cmd/server/main.go`)
 
 - Creates MCP server instance using mark3labs/mcp-go
-- Registers all tools via `tools.RegisterTools()`
+- Registers all MCP components:
+  - `prompts.RegisterMCPPrompts()`
+  - `resources.RegisterMCPResources()`
+  - `tools.RegisterMCPTools()`
 - Serves over stdio protocol
 
 **Tool Registration** (`internal/tools/register.go`)
 
 - Central registration point for all MCP tools
 - Initializes resource mappers before registering tools
-- Currently registers: hello tool and list_resources tool
+- Currently registers: list_k8s_resources and get_k8s_resource tools
 
 **Kubernetes Client Layer** (`internal/k8s/`)
 
