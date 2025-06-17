@@ -7,5 +7,6 @@ import (
 )
 
 func RegisterMCPPrompts(s *server.MCPServer) {
-	// placeholder
+	// Register prompts
+	RegisterMemoryPressureMCPPrompt(s)
 }
