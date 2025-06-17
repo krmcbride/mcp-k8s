@@ -27,6 +27,15 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 - `make lint-ci` - Run linters for CI
 - `make format-ci` - Check formatting in CI
 
+## MCP Resources
+
+**Kubernetes Contexts** (`k8s://contexts`)
+
+- Exposes available kubeconfig contexts as an MCP resource
+- Returns JSON array with context name, cluster name, and current context indicator
+- Enables discovery of available contexts for use with the tools
+- Allows matching context names to cluster names for intuitive queries
+
 ## Architecture
 
 ### Core Components

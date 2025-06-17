@@ -1,0 +1,67 @@
+package resources
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+// KubeContext represents a Kubernetes context with its associated cluster information
+type KubeContext struct {
+	Name        string `json:"name"`
+	ClusterName string `json:"clusterName"`
+	IsCurrent   bool   `json:"isCurrent"`
+}
+
+func RegisterContextsResource(s *server.MCPServer) {
+	s.AddResource(newContextsResource(), contextsHandler)
+}
+
+// Resource schema
+func newContextsResource() mcp.Resource {
+	return mcp.NewResource("k8s://contexts", "k8s_contexts",
+		mcp.WithResourceDescription("List of available Kubernetes contexts from kubeconfig"),
+	)
+}
+
+// Resource handler
+func contextsHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+	// Load kubeconfig using the same rules as our k8s client
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	config, err := loadingRules.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
+	}
+
+	// Get the current context
+	currentContext := config.CurrentContext
+
+	// Build list of contexts with their cluster names
+	contexts := make([]KubeContext, 0, len(config.Contexts))
+	for name, context := range config.Contexts {
+		contexts = append(contexts, KubeContext{
+			Name:        name,
+			ClusterName: context.Cluster,
+			IsCurrent:   name == currentContext,
+		})
+	}
+
+	// Convert to JSON
+	jsonData, err := json.Marshal(contexts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal contexts: %w", err)
+	}
+
+	// Return as MCP resource contents
+	return []mcp.ResourceContents{
+		mcp.TextResourceContents{
+			URI:      "k8s://contexts",
+			MIMEType: "application/json",
+			Text:     string(jsonData),
+		},
+	}, nil
+}

@@ -5,6 +5,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/server"
 
+	"github.com/krmcbride/mcp-k8s/internal/prompts"
+	"github.com/krmcbride/mcp-k8s/internal/resources"
 	"github.com/krmcbride/mcp-k8s/internal/tools"
 )
 
@@ -15,6 +17,8 @@ func main() {
 		server.WithToolCapabilities(false),
 	)
 
+	prompts.RegisterPrompts(s)
+	resources.RegisterResources(s)
 	tools.RegisterTools(s)
 
 	if err := server.ServeStdio(s); err != nil {
