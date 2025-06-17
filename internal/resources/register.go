@@ -1,3 +1,5 @@
+// Package resources provides MCP resource registration for exposing
+// Kubernetes cluster information and configuration as MCP resources.
 package resources
 
 import (

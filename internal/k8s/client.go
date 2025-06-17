@@ -1,3 +1,5 @@
+// Package k8s provides a Kubernetes client factory with context switching support
+// and utilities for dynamic resource operations across multiple clusters.
 package k8s
 
 import (

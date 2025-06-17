@@ -1,3 +1,5 @@
+// Package prompts provides MCP prompt registration and management
+// for pre-defined Kubernetes operations and workflows.
 package prompts
 
 import (

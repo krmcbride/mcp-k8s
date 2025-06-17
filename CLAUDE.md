@@ -130,6 +130,11 @@ When implementing new features, start with architectural planning:
 - Write comprehensive comments for public APIs during implementation, not after
 - Explain design decisions and component relationships
 - Include usage examples for complex interfaces
+- Maintain package comments in the primary file of each package (except `main`):
+  - Add to `register.go` for packages focused on registration
+  - Add to the primary interface file (e.g., `client.go`, `mapper.go`) for functionality packages
+  - Update package comments when the package's purpose changes
+  - Format: `// Package <name> provides...` (2-3 lines describing the package's purpose)
 
 ### Test-Driven Validation
 

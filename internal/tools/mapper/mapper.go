@@ -1,3 +1,6 @@
+// Package mapper provides an extensible system for converting Kubernetes unstructured
+// resources into structured output with resource-specific field extraction and
+// case-insensitive Kind lookups.
 package mapper
 
 import (
