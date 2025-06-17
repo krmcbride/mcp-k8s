@@ -17,4 +17,5 @@ func RegisterMCPTools(s *server.MCPServer) {
 	RegisterListK8sResourcesMCPTool(s)
 	RegisterGetK8sResourceMCPTool(s)
 	RegisterGetK8sMetricsMCPTool(s)
+	RegisterGetK8sPodLogsMCPTool(s)
 }

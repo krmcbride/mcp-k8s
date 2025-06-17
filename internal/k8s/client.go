@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
@@ -69,6 +70,36 @@ func GetMetricsClientForContext(k8sContext string) (metrics.Interface, error) {
 	}
 
 	return metricsClient, nil
+}
+
+// GetClientsetForContext creates a Kubernetes clientset for the specified context.
+// A clientset provides access to typed Kubernetes API operations for core resources.
+//
+// Parameters:
+//   - k8sContext: The name of the kubeconfig context to use. If empty, uses the current context.
+//
+// Returns:
+//   - A clientset interface for performing operations on core Kubernetes resources
+//   - An error if the client creation fails (e.g., invalid context, connection issues)
+//
+// Example usage:
+//
+//	clientset, err := GetClientsetForContext("production")
+//	pods, err := clientset.CoreV1().Pods("default").List(ctx, metav1.ListOptions{})
+func GetClientsetForContext(k8sContext string) (kubernetes.Interface, error) {
+	kubeConfig := getKubeConfigForContext(k8sContext)
+
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return clientset, nil
 }
 
 // Helper that creates both a dynamic client and REST mapper for a specific Kubernetes context.
