@@ -5,41 +5,45 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/krmcbride/mcp-k8s/internal/k8s"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"k8s.io/apimachinery/pkg/api/resource"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
+
+	"github.com/krmcbride/mcp-k8s/internal/k8s"
 )
 
 type getK8sMetricsParams struct {
 	Context   string
 	Kind      string
 	Namespace string
+	Name      string
+	Sum       bool
 }
 
 // NodeMetrics represents CPU and memory usage for a node
 type NodeMetrics struct {
-	Name        string `json:"name"`
-	CPUUsage    string `json:"cpuUsage"`
-	MemoryUsage string `json:"memoryUsage"`
+	Name               string `json:"name"`
+	CPUUsageMillicores int64  `json:"cpuUsageMillicores"`
+	MemoryUsageMiB     int64  `json:"memoryUsageMiB"`
 }
 
 // PodMetrics represents CPU and memory usage for a pod
 type PodMetrics struct {
-	Name        string             `json:"name"`
-	Namespace   string             `json:"namespace"`
-	CPUUsage    string             `json:"cpuUsage"`
-	MemoryUsage string             `json:"memoryUsage"`
-	Containers  []ContainerMetrics `json:"containers"`
+	Name               string             `json:"name"`
+	Namespace          string             `json:"namespace"`
+	CPUUsageMillicores int64              `json:"cpuUsageMillicores"`
+	MemoryUsageMiB     int64              `json:"memoryUsageMiB"`
+	Containers         []ContainerMetrics `json:"containers"`
 }
 
 // ContainerMetrics represents CPU and memory usage for a container
 type ContainerMetrics struct {
-	Name        string `json:"name"`
-	CPUUsage    string `json:"cpuUsage"`
-	MemoryUsage string `json:"memoryUsage"`
+	Name               string `json:"name"`
+	CPUUsageMillicores int64  `json:"cpuUsageMillicores"`
+	MemoryUsageMiB     int64  `json:"memoryUsageMiB"`
 }
 
 func RegisterGetK8sMetricsMCPTool(s *server.MCPServer) {
@@ -60,6 +64,12 @@ func newGetK8sMetricsMCPTool() mcp.Tool {
 		),
 		mcp.WithString(namespaceProperty,
 			mcp.Description("The Kubernetes namespace to use. Ignored for nodes. If not provided for pods, shows metrics for all namespaces."),
+		),
+		mcp.WithString(nameProperty,
+			mcp.Description("Optional name to filter results by specific pod or node name."),
+		),
+		mcp.WithBoolean("sum",
+			mcp.Description("When listing multiple resources, include a TOTAL entry with the sum of all CPU and memory usage."),
 		),
 	)
 }
@@ -86,9 +96,9 @@ func getK8sMetricsHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	// Get metrics based on kind
 	var content interface{}
 	if params.Kind == "node" {
-		content, err = getNodeMetrics(ctx, metricsClient)
+		content, err = getNodeMetrics(ctx, metricsClient, params.Name, params.Sum)
 	} else {
-		content, err = getPodMetrics(ctx, metricsClient, params.Namespace)
+		content, err = getPodMetrics(ctx, metricsClient, params.Namespace, params.Name, params.Sum)
 	}
 
 	if err != nil {
@@ -117,81 +127,149 @@ func extractGetK8sMetricsParams(request mcp.CallToolRequest) (*getK8sMetricsPara
 		Context:   context,
 		Kind:      kind,
 		Namespace: request.GetString(namespaceProperty, metav1.NamespaceAll),
+		Name:      request.GetString(nameProperty, ""),
+		Sum:       request.GetBool("sum", false),
 	}, nil
 }
 
-func getNodeMetrics(ctx context.Context, metricsClient metrics.Interface) ([]NodeMetrics, error) {
+func getNodeMetrics(ctx context.Context, metricsClient metrics.Interface, nodeName string, includeSum bool) ([]NodeMetrics, error) {
+	if nodeName != "" {
+		// Get specific node - sum not applicable for single item
+		nodeMetric, err := metricsClient.MetricsV1beta1().NodeMetricses().Get(ctx, nodeName, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get node metrics for %s: %w", nodeName, err)
+		}
+
+		processed := processNodeMetric(nodeMetric)
+		return []NodeMetrics{processed}, nil
+	}
+
+	// Get all nodes
 	nodeMetricsList, err := metricsClient.MetricsV1beta1().NodeMetricses().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list node metrics: %w", err)
 	}
 
-	nodeMetrics := make([]NodeMetrics, 0, len(nodeMetricsList.Items))
+	var nodeMetrics []NodeMetrics
+	var totalCPUMillicores, totalMemoryMiB int64
 
 	for _, nodeMetric := range nodeMetricsList.Items {
-		cpuUsage := formatResourceQuantity(nodeMetric.Usage["cpu"])
-		memoryUsage := formatResourceQuantity(nodeMetric.Usage["memory"])
+		processed := processNodeMetric(&nodeMetric)
+		nodeMetrics = append(nodeMetrics, processed)
 
+		// Add to totals
+		totalCPUMillicores += processed.CPUUsageMillicores
+		totalMemoryMiB += processed.MemoryUsageMiB
+	}
+
+	// Add total entry if requested
+	if includeSum {
 		nodeMetrics = append(nodeMetrics, NodeMetrics{
-			Name:        nodeMetric.Name,
-			CPUUsage:    cpuUsage,
-			MemoryUsage: memoryUsage,
+			Name:               "TOTAL",
+			CPUUsageMillicores: totalCPUMillicores,
+			MemoryUsageMiB:     totalMemoryMiB,
 		})
 	}
 
 	return nodeMetrics, nil
 }
 
-func getPodMetrics(ctx context.Context, metricsClient metrics.Interface, namespace string) ([]PodMetrics, error) {
+func getPodMetrics(ctx context.Context, metricsClient metrics.Interface, namespace string, podName string, includeSum bool) ([]PodMetrics, error) {
+	if podName != "" {
+		// Get specific pod - sum not applicable for single item
+		podMetric, err := metricsClient.MetricsV1beta1().PodMetricses(namespace).Get(ctx, podName, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get pod metrics for %s: %w", podName, err)
+		}
+
+		processed := processPodMetric(podMetric)
+		return []PodMetrics{processed}, nil
+	}
+
+	// Get metrics for all pods in the namespace(s)
 	podMetricsList, err := metricsClient.MetricsV1beta1().PodMetricses(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pod metrics: %w", err)
 	}
 
 	podMetrics := make([]PodMetrics, 0, len(podMetricsList.Items))
+	var totalCPUMillicores, totalMemoryMiB int64
 
 	for _, podMetric := range podMetricsList.Items {
-		// Calculate total pod CPU and memory usage from all containers
-		var totalCPU, totalMemory resource.Quantity
-		containers := make([]ContainerMetrics, 0, len(podMetric.Containers))
+		processed := processPodMetric(&podMetric)
+		podMetrics = append(podMetrics, processed)
 
-		for _, container := range podMetric.Containers {
-			cpuUsage := container.Usage["cpu"]
-			memoryUsage := container.Usage["memory"]
+		// Add to totals
+		totalCPUMillicores += processed.CPUUsageMillicores
+		totalMemoryMiB += processed.MemoryUsageMiB
+	}
 
-			totalCPU.Add(cpuUsage)
-			totalMemory.Add(memoryUsage)
-
-			containers = append(containers, ContainerMetrics{
-				Name:        container.Name,
-				CPUUsage:    formatResourceQuantity(cpuUsage),
-				MemoryUsage: formatResourceQuantity(memoryUsage),
-			})
+	// Add total entry if requested
+	if includeSum {
+		// Determine namespace for total - use "ALL" for cross-namespace queries
+		totalNamespace := namespace
+		if namespace == metav1.NamespaceAll {
+			totalNamespace = "ALL"
 		}
 
 		podMetrics = append(podMetrics, PodMetrics{
-			Name:        podMetric.Name,
-			Namespace:   podMetric.Namespace,
-			CPUUsage:    formatResourceQuantity(totalCPU),
-			MemoryUsage: formatResourceQuantity(totalMemory),
-			Containers:  containers,
+			Name:               "TOTAL",
+			Namespace:          totalNamespace,
+			CPUUsageMillicores: totalCPUMillicores,
+			MemoryUsageMiB:     totalMemoryMiB,
+			Containers:         []ContainerMetrics{}, // Empty containers for total
 		})
 	}
 
 	return podMetrics, nil
 }
 
-// Helper function to format resource quantities in human-readable format
-func formatResourceQuantity(q resource.Quantity) string {
-	// Convert to millicores for CPU or bytes for memory
-	if q.Format == resource.DecimalSI {
-		// CPU in millicores
-		return fmt.Sprintf("%dm", q.MilliValue())
+// Helper function to convert resource usage to standard units
+func convertResourceUsage(usage corev1.ResourceList) (cpuMillicores int64, memoryMiB int64) {
+	cpuQuantity := usage["cpu"]
+	memoryQuantity := usage["memory"]
+
+	cpuMillicores = cpuQuantity.MilliValue()
+	memoryMiB = memoryQuantity.Value() / (1024 * 1024) // Convert bytes to MiB
+
+	return cpuMillicores, memoryMiB
+}
+
+// Helper function to process a single node metric
+func processNodeMetric(nodeMetric *metricsv1beta1.NodeMetrics) NodeMetrics {
+	cpuUsageMillicores, memoryUsageMiB := convertResourceUsage(nodeMetric.Usage)
+
+	return NodeMetrics{
+		Name:               nodeMetric.Name,
+		CPUUsageMillicores: cpuUsageMillicores,
+		MemoryUsageMiB:     memoryUsageMiB,
 	}
-	// Memory in bytes, convert to Mi
-	bytes := q.Value()
-	if bytes >= 1024*1024 {
-		return fmt.Sprintf("%dMi", bytes/(1024*1024))
+}
+
+// Helper function to process a single pod metric
+func processPodMetric(podMetric *metricsv1beta1.PodMetrics) PodMetrics {
+	// Calculate total pod CPU and memory usage from all containers
+	var totalCPUMillicores, totalMemoryMiB int64
+	containers := make([]ContainerMetrics, 0, len(podMetric.Containers))
+
+	for _, container := range podMetric.Containers {
+		cpuUsageMillicores, memoryUsageMiB := convertResourceUsage(container.Usage)
+
+		totalCPUMillicores += cpuUsageMillicores
+		totalMemoryMiB += memoryUsageMiB
+
+		containers = append(containers, ContainerMetrics{
+			Name:               container.Name,
+			CPUUsageMillicores: cpuUsageMillicores,
+			MemoryUsageMiB:     memoryUsageMiB,
+		})
 	}
-	return fmt.Sprintf("%d", bytes)
+
+	return PodMetrics{
+		Name:               podMetric.Name,
+		Namespace:          podMetric.Namespace,
+		CPUUsageMillicores: totalCPUMillicores,
+		MemoryUsageMiB:     totalMemoryMiB,
+		Containers:         containers,
+	}
 }
