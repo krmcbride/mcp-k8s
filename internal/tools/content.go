@@ -3,10 +3,11 @@ package tools
 import (
 	"encoding/json"
 
-	"github.com/krmcbride/mcp-k8s/internal/tools/mapper"
 	"github.com/mark3labs/mcp-go/mcp"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/krmcbride/mcp-k8s/internal/tools/mapper"
 )
 
 func mapToK8sResourceListContent(list *unstructured.UnstructuredList, gvk schema.GroupVersionKind) []interface{} {

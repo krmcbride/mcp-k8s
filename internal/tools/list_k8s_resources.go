@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/krmcbride/mcp-k8s/internal/k8s"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/krmcbride/mcp-k8s/internal/k8s"
 )
 
 const (

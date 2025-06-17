@@ -4,8 +4,9 @@
 package tools
 
 import (
-	"github.com/krmcbride/mcp-k8s/internal/tools/mapper"
 	"github.com/mark3labs/mcp-go/server"
+
+	"github.com/krmcbride/mcp-k8s/internal/tools/mapper"
 )
 
 func RegisterMCPTools(s *server.MCPServer) {
