@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "krmcbride_k8s": {
+      "type": "stdio",
+      "command": "go",
+      "args": [
+        "run",
+        "cmd/server/main.go"
+      ],
+      "env": {}
+    }
+  }
+}
