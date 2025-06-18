@@ -29,8 +29,8 @@ This makes it safe to use for debugging production issues without risk of accide
 
 - **`memory_pressure_analysis`** - Analyzes pods for memory pressure issues, including:
 
-  - Pods with memory usage close to their configured limits (>90%)
-  - Pods with memory usage significantly exceeding their requests (>150%)
+  - Pods with memory usage close to their configured limits (>80%)
+  - Pods with memory usage significantly exceeding their requests (>120%)
   - Pods that have been OOM killed
 
   **Arguments:**
