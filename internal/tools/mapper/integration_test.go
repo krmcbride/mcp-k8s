@@ -20,6 +20,8 @@ func TestAllResourceMappersRegistered(t *testing.T) {
 		{Group: "", Version: "v1", Kind: "Node"},
 		{Group: "", Version: "v1", Kind: "Event"},
 		{Group: "events.k8s.io", Version: "v1beta1", Kind: "Event"},
+		{Group: "apiextensions.k8s.io", Version: "v1", Kind: "CustomResourceDefinition"},
+		{Group: "apiextensions.k8s.io", Version: "v1beta1", Kind: "CustomResourceDefinition"},
 	}
 
 	for _, gvk := range expectedMappers {
