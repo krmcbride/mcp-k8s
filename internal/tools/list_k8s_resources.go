@@ -14,19 +14,21 @@ import (
 )
 
 const (
-	contextProperty   = "context"
-	namespaceProperty = "namespace"
-	groupProperty     = "group"
-	versionProperty   = "version"
-	kindProperty      = "kind"
+	contextProperty       = "context"
+	namespaceProperty     = "namespace"
+	groupProperty         = "group"
+	versionProperty       = "version"
+	kindProperty          = "kind"
+	fieldSelectorProperty = "fieldSelector"
 )
 
 type listK8sResourcesParams struct {
-	Context   string
-	Namespace string
-	Group     string
-	Version   string
-	Kind      string
+	Context       string
+	Namespace     string
+	Group         string
+	Version       string
+	Kind          string
+	FieldSelector string
 }
 
 func RegisterListK8sResourcesMCPTool(s *server.MCPServer) {
@@ -36,7 +38,7 @@ func RegisterListK8sResourcesMCPTool(s *server.MCPServer) {
 // Tool schema
 func newListK8sResourcesMCPTool() mcp.Tool {
 	return mcp.NewTool("list_k8s_resources",
-		mcp.WithDescription("List Kubernetes resources"),
+		mcp.WithDescription("List Kubernetes resources with optional server-side filtering"),
 		mcp.WithString(contextProperty,
 			mcp.Description("The Kubernetes context to use."),
 			mcp.Required(),
@@ -53,6 +55,9 @@ func newListK8sResourcesMCPTool() mcp.Tool {
 		mcp.WithString(kindProperty,
 			mcp.Description("The Kubernetes resource Kind."),
 			mcp.Required(),
+		),
+		mcp.WithString(fieldSelectorProperty,
+			mcp.Description("Field selector to filter resources server-side. Examples: 'metadata.namespace!=default', 'status.phase=Running', 'spec.nodeName=node-1'. Multiple selectors can be comma-separated."),
 		),
 	)
 }
@@ -84,15 +89,21 @@ func listK8sResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to create dynamic client: %v", err)), nil
 	}
 
+	// Prepare list options with field selector
+	listOptions := metav1.ListOptions{}
+	if params.FieldSelector != "" {
+		listOptions.FieldSelector = params.FieldSelector
+	}
+
 	// List resources
 	var list *unstructured.UnstructuredList
 	if params.Namespace == metav1.NamespaceAll {
-		list, err = dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{})
+		list, err = dynamicClient.Resource(gvr).List(ctx, listOptions)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to list resources: %v", err)), nil
 		}
 	} else {
-		list, err = dynamicClient.Resource(gvr).Namespace(params.Namespace).List(ctx, metav1.ListOptions{})
+		list, err = dynamicClient.Resource(gvr).Namespace(params.Namespace).List(ctx, listOptions)
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to list resources: %v", err)), nil
 		}
@@ -117,10 +128,11 @@ func extractListK8sResourcesParams(request mcp.CallToolRequest) (*listK8sResourc
 	}
 
 	return &listK8sResourcesParams{
-		Context:   context,
-		Namespace: request.GetString(namespaceProperty, metav1.NamespaceAll),
-		Group:     request.GetString(groupProperty, ""),
-		Version:   request.GetString(versionProperty, "v1"),
-		Kind:      kind,
+		Context:       context,
+		Namespace:     request.GetString(namespaceProperty, metav1.NamespaceAll),
+		Group:         request.GetString(groupProperty, ""),
+		Version:       request.GetString(versionProperty, "v1"),
+		Kind:          kind,
+		FieldSelector: request.GetString(fieldSelectorProperty, ""),
 	}, nil
 }
