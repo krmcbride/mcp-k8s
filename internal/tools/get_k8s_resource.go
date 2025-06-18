@@ -39,7 +39,7 @@ func newGetK8sResourceMCPTool() mcp.Tool {
 	return mcp.NewTool("get_k8s_resource",
 		mcp.WithDescription("Get a single Kubernetes resource with optional Go template formatting"),
 		mcp.WithString(contextProperty,
-			mcp.Description("The Kubernetes context to use."),
+			mcp.Description("The Kubernetes context to use. To discover available contexts or resolve cluster aliases use the kubeconfig://contexts MCP resource."),
 			mcp.Required(),
 		),
 		mcp.WithString(nameProperty,

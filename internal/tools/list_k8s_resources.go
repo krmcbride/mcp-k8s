@@ -44,7 +44,7 @@ func newListK8sResourcesMCPTool() mcp.Tool {
 	return mcp.NewTool("list_k8s_resources",
 		mcp.WithDescription("List Kubernetes resources with optional server-side filtering and pagination"),
 		mcp.WithString(contextProperty,
-			mcp.Description("The Kubernetes context to use."),
+			mcp.Description("The Kubernetes context to use. To discover available contexts or resolve cluster aliases use the kubeconfig://contexts MCP resource."),
 			mcp.Required(),
 		),
 		mcp.WithString(namespaceProperty,

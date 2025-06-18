@@ -55,7 +55,7 @@ func newGetK8sMetricsMCPTool() mcp.Tool {
 	return mcp.NewTool("get_k8s_metrics",
 		mcp.WithDescription("Get Kubernetes resource metrics (CPU/memory usage) for nodes or pods, similar to kubectl top"),
 		mcp.WithString(contextProperty,
-			mcp.Description("The Kubernetes context to use."),
+			mcp.Description("The Kubernetes context to use. To discover available contexts or resolve cluster aliases use the kubeconfig://contexts MCP resource."),
 			mcp.Required(),
 		),
 		mcp.WithString(kindProperty,

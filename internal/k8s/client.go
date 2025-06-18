@@ -3,6 +3,9 @@
 package k8s
 
 import (
+	"fmt"
+	"strings"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -115,7 +118,7 @@ func getClientsForContext(k8sContext string) (*k8sClients, error) {
 
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, err
+		return nil, enhanceContextError(err)
 	}
 
 	// Create dynamic client
@@ -165,4 +168,17 @@ func getKubeConfigForContext(k8sContext string) clientcmd.ClientConfig {
 		loadingRules,
 		configOverrides,
 	)
+}
+
+// enhanceContextError wraps context-related errors with guidance about the kubeconfig MCP resource
+func enhanceContextError(err error) error {
+	errMsg := err.Error()
+
+	// Check for common context-related error patterns
+	if strings.Contains(errMsg, "context") && (strings.Contains(errMsg, "does not exist") ||
+		strings.Contains(errMsg, "not found") || strings.Contains(errMsg, "no such context")) {
+		return fmt.Errorf("%s. To discover available contexts or resolve cluster aliases, use the kubeconfig://contexts MCP resource", errMsg)
+	}
+
+	return err
 }
