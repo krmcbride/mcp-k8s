@@ -23,8 +23,11 @@ func RegisterK8sContextsMCPResource(s *server.MCPServer) {
 
 // Resource schema
 func newK8sContextsMCPResource() mcp.Resource {
-	return mcp.NewResource("k8s://contexts", "k8s_contexts",
-		mcp.WithResourceDescription("List of available Kubernetes contexts and cluster names from kubeconfig"),
+	return mcp.NewResource("kubeconfig://contexts", "kubeconfig_contexts",
+		mcp.WithResourceDescription("Current user's kubeconfig contexts - maps context names to cluster names for "+
+			"resolving cluster aliases like 'prod' or 'sandbox' to actual cluster names and context names. Use this "+
+			"resource to discover available Kubernetes contexts instead of running `kubectl config`."),
+		mcp.WithMIMEType("application/json"),
 	)
 }
 
@@ -59,7 +62,7 @@ func k8sContextsHandler(ctx context.Context, request mcp.ReadResourceRequest) ([
 	// Return as MCP resource contents
 	return []mcp.ResourceContents{
 		mcp.TextResourceContents{
-			URI:      "k8s://contexts",
+			URI:      "kubeconfig://contexts",
 			MIMEType: "application/json",
 			Text:     string(jsonData),
 		},

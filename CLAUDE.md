@@ -39,10 +39,11 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 
 ### Resources
 
-**Kubernetes Contexts** (`k8s://contexts`)
+**Kubernetes Contexts** (`kubeconfig://contexts`)
 
-- Exposes available kubeconfig contexts as an MCP resource
+- Exposes the current user's kubeconfig contexts as an MCP resource
 - Returns JSON array with context name, cluster name, and current context indicator
+- **IMPORTANT**: Use this resource to resolve cluster aliases (like 'prod', 'sandbox') to actual context names instead of running kubectl commands
 - Enables discovery of available contexts for use with the tools
 - Allows matching context names to cluster names for intuitive queries
 

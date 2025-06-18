@@ -23,7 +23,7 @@ This makes it safe to use for debugging production issues without risk of accide
 
 ## Resources
 
-- **`k8s://contexts`** - Lists available Kubernetes contexts from your kubeconfig file, showing context names, cluster names, and which context is currently active. This helps discover available clusters for use with the tools.
+- **`kubeconfig://contexts`** - Lists available Kubernetes contexts from your kubeconfig file, showing context names, cluster names, and which context is currently active. Use this resource to resolve cluster aliases (like 'prod', 'sandbox') to actual context names instead of running kubectl commands. Returns JSON with context-to-cluster mappings.
 
 ## Prompts
 
