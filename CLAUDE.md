@@ -118,6 +118,7 @@ Currently implemented mappers for:
 - Service, Ingress (networking)
 - Node (infrastructure)
 - Event (core/v1 and events.k8s.io/v1beta1) (cluster events)
+- CustomResourceDefinition (apiextensions.k8s.io/v1 and v1beta1) (CRD discovery)
 
 Each mapper extracts resource-specific fields (e.g., replica counts, status, networking details) rather than just name/namespace.
 
@@ -128,6 +129,7 @@ Each mapper extracts resource-specific fields (e.g., replica counts, status, net
 3. Implement mapper function extracting relevant fields from unstructured data
 4. Add init() function to register the mapper
 5. Update integration test in `integration_test.go`
+6. **IMPORTANT**: Update the Resource Mappers list in this documentation
 
 ## Testing Strategy
 
@@ -164,6 +166,8 @@ When implementing new features, start with architectural planning:
 - Break complex features into smaller, testable increments
 - Validate each component with `make build` and `make test` before proceeding
 - Test intermediate states rather than implementing entire features before first validation
+- **CRITICAL**: Build and test after each significant change to catch issues early
+- Use `git status` to verify file changes before and after bulk operations
 
 ### Modern Go Guidelines
 
@@ -173,11 +177,27 @@ When implementing new features, start with architectural planning:
 - Example: `var content any` instead of `var content interface{}`
 - This applies to function parameters, return types, and variable declarations
 
+**Safe File Manipulation**
+
+- **AVOID** batch `sed` operations on multiple files - they can corrupt files
+- Use `MultiEdit` tool for multiple related changes in a single file
+- Use individual `Edit` calls for changes across multiple files
+- Always check `git status` before and after bulk operations
+- Use `git restore <file>` to recover from file corruption
+- Test build after any file manipulation to ensure no corruption
+
 **Error Handling**
 
 - Avoid error variable shadowing in nested scopes
 - Use descriptive error variable names when redeclaring in inner scopes
 - Example: Use `parseErr` instead of redeclaring `err` in parsing operations
+
+**Enhanced Error Messaging**
+
+- When errors relate to invalid context names, enhance them to mention the `kubeconfig://contexts` MCP resource
+- Pattern: Detect context-related errors and append guidance about using MCP resources instead of kubectl commands
+- Example: "context 'sandbox' does not exist. To discover available contexts or resolve cluster aliases, use the kubeconfig://contexts MCP resource instead of running kubectl commands"
+- Apply this pattern in client creation functions where context errors are likely
 
 **Safety-First Design**
 
@@ -237,6 +257,9 @@ When implementing new features, start with architectural planning:
 - Propose and implement tests early in the feature development process
 - Use tests to validate design assumptions and catch integration issues
 - Test edge cases like case variations, empty inputs, and error conditions
+- **Safety Protocol**: Always run `make build` and `make test` after file modifications
+- If tests fail after bulk file operations, check for file corruption with `git status`
+- Use incremental approach: make one change, test, then proceed to next change
 
 ### Consistency Validation
 
