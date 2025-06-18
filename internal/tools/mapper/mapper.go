@@ -11,7 +11,7 @@ import (
 )
 
 // ResourceMapper is a function that maps an unstructured item to a custom content structure
-type ResourceMapper func(item unstructured.Unstructured) interface{}
+type ResourceMapper func(item unstructured.Unstructured) any
 
 // resourceMappers holds custom mappers for specific resource types
 var resourceMappers = make(map[schema.GroupVersionKind]ResourceMapper)

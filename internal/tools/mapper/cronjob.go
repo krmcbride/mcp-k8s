@@ -24,7 +24,7 @@ func init() {
 	)
 }
 
-func mapCronJobResource(item unstructured.Unstructured) interface{} {
+func mapCronJobResource(item unstructured.Unstructured) any {
 	cronJob := CronJobListContent{
 		Name:      item.GetName(),
 		Namespace: item.GetNamespace(),

@@ -94,7 +94,7 @@ func getK8sMetricsHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	}
 
 	// Get metrics based on kind
-	var content interface{}
+	var content any
 	if params.Kind == "node" {
 		content, err = getNodeMetrics(ctx, metricsClient, params.Name, params.Sum)
 	} else {

@@ -97,15 +97,15 @@ func getK8sPodLogsHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 
 	// Handle since/sinceTime
 	if params.Since != "" {
-		duration, err := parseDuration(params.Since)
-		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("Invalid 'since' duration: %v", err)), nil
+		duration, parseErr := parseDuration(params.Since)
+		if parseErr != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Invalid 'since' duration: %v", parseErr)), nil
 		}
 		logOptions.SinceSeconds = &duration
 	} else if params.SinceTime != "" {
-		sinceTime, err := time.Parse(time.RFC3339, params.SinceTime)
-		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("Invalid 'sinceTime' format (expected RFC3339): %v", err)), nil
+		sinceTime, parseErr := time.Parse(time.RFC3339, params.SinceTime)
+		if parseErr != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Invalid 'sinceTime' format (expected RFC3339): %v", parseErr)), nil
 		}
 		metaTime := metav1.NewTime(sinceTime)
 		logOptions.SinceTime = &metaTime

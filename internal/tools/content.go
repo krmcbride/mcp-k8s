@@ -10,8 +10,8 @@ import (
 	"github.com/krmcbride/mcp-k8s/internal/tools/mapper"
 )
 
-func mapToK8sResourceListContent(list *unstructured.UnstructuredList, gvk schema.GroupVersionKind) []interface{} {
-	content := make([]interface{}, 0, len(list.Items))
+func mapToK8sResourceListContent(list *unstructured.UnstructuredList, gvk schema.GroupVersionKind) []any {
+	content := make([]any, 0, len(list.Items))
 
 	// Get the appropriate mapper for this resource type
 	resourceMapper, hasCustomMapper := mapper.Get(gvk)
@@ -28,7 +28,7 @@ func mapToK8sResourceListContent(list *unstructured.UnstructuredList, gvk schema
 	return content
 }
 
-func mapToK8sResourceContent(resource *unstructured.Unstructured, gvk schema.GroupVersionKind) interface{} {
+func mapToK8sResourceContent(resource *unstructured.Unstructured, gvk schema.GroupVersionKind) any {
 	// Get the appropriate mapper for this resource type
 	resourceMapper, hasCustomMapper := mapper.Get(gvk)
 
@@ -41,7 +41,7 @@ func mapToK8sResourceContent(resource *unstructured.Unstructured, gvk schema.Gro
 	}
 }
 
-func toJSONToolResult(content interface{}) (*mcp.CallToolResult, error) {
+func toJSONToolResult(content any) (*mcp.CallToolResult, error) {
 	jsonContent, err := json.Marshal(content)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil

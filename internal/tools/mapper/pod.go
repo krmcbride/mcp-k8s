@@ -81,7 +81,7 @@ func init() {
 	)
 }
 
-func mapPodResource(item unstructured.Unstructured) interface{} {
+func mapPodResource(item unstructured.Unstructured) any {
 	pod := PodListContent{
 		Name:      item.GetName(),
 		Namespace: item.GetNamespace(),
@@ -97,7 +97,7 @@ func mapPodResource(item unstructured.Unstructured) interface{} {
 		var totalMemoryRequest, totalMemoryLimit int64
 
 		for _, c := range containers {
-			if containerMap, ok := c.(map[string]interface{}); ok {
+			if containerMap, ok := c.(map[string]any); ok {
 				// Extract memory request
 				if memReq, found, _ := unstructured.NestedString(containerMap, "resources", "requests", "memory"); found {
 					totalMemoryRequest += parseMemoryToMiB(memReq)
@@ -122,7 +122,7 @@ func mapPodResource(item unstructured.Unstructured) interface{} {
 		var lastTerminationReason string
 
 		for _, c := range containers {
-			if containerMap, ok := c.(map[string]interface{}); ok {
+			if containerMap, ok := c.(map[string]any); ok {
 				if r, found, _ := unstructured.NestedBool(containerMap, "ready"); found && r {
 					ready++
 				}
