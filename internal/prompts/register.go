@@ -9,4 +9,5 @@ import (
 func RegisterMCPPrompts(s *server.MCPServer) {
 	// Register prompts
 	RegisterMemoryPressureMCPPrompt(s)
+	RegisterWorkloadInstabilityMCPPrompt(s)
 }

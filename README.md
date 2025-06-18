@@ -5,6 +5,7 @@ A Model Context Protocol (MCP) server that provides read-only tools for safely i
 ## Design Philosophy
 
 This MCP server is intentionally **read-only** and focuses on observability and debugging. It does not include tools that could:
+
 - Modify or delete resources (no `kubectl apply`, `delete`, `patch`, etc.)
 - Execute commands in containers (no `kubectl exec`)
 - Scale deployments or modify replica counts
@@ -27,12 +28,28 @@ This makes it safe to use for debugging production issues without risk of accide
 ## Prompts
 
 - **`memory_pressure_analysis`** - Analyzes pods for memory pressure issues, including:
+
   - Pods with memory usage close to their configured limits (>90%)
   - Pods with memory usage significantly exceeding their requests (>150%)
   - Pods that have been OOM killed
-  
+
   **Arguments:**
+
   - `context` (required) - The Kubernetes context to use for the analysis
   - `namespace` (optional) - The namespace to analyze (defaults to all namespaces)
-  
+
   The prompt guides the assistant to use the `get_k8s_metrics` and `list_k8s_resources` tools to identify problematic pods and provide actionable recommendations.
+
+- **`workload_instability_analysis`** - Analyzes Events and pod logs for signs of workload instability, including:
+
+  - Warning Events and failed operations (FailedMount, FailedScheduling, etc.)
+  - Error patterns in pod logs (ERROR, FATAL, PANIC messages)
+  - Authentication/authorization failures and network connectivity issues
+  - Resource exhaustion indicators and application crashes
+
+  **Arguments:**
+
+  - `context` (required) - The Kubernetes context to use for the analysis
+  - `namespace` (required) - The namespace to analyze for workload instability
+
+  The prompt guides the assistant to systematically analyze Events and pod logs across all containers, providing a prioritized summary from critical to informational findings.

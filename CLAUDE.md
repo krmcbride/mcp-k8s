@@ -55,6 +55,13 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 - Optional argument: `namespace` (defaults to all namespaces)
 - Guides assistant to use metrics and resource tools for comprehensive analysis
 
+**Workload Instability Analysis** (`workload_instability_analysis`)
+
+- Analyzes Events and pod logs for signs of workload instability including errors, warnings, and suspicious patterns
+- Required argument: `context` (Kubernetes context)
+- Required argument: `namespace` (target namespace to analyze)
+- Guides assistant to systematically analyze Events and pod logs across all containers, providing prioritized findings from critical to informational
+
 ## Architecture
 
 ### Core Components
@@ -146,11 +153,13 @@ When implementing new features, start with architectural planning:
 - Anticipate potential edge cases and normalization needs
 
 **API Research Protocol**
+
 - Use Context7 proactively to research exact API structures before implementation
 - For unfamiliar libraries or APIs, always verify field names, types, and methods
 - Don't assume API structures - verify through documentation before coding
 
 **Incremental Development**
+
 - Break complex features into smaller, testable increments
 - Validate each component with `make build` and `make test` before proceeding
 - Test intermediate states rather than implementing entire features before first validation
