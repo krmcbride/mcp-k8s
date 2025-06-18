@@ -27,7 +27,16 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 - `make lint-ci` - Run linters for CI
 - `make format-ci` - Check formatting in CI
 
-## MCP Resources
+## MCP Components
+
+### Tools
+
+- **`list_k8s_resources`** - List Kubernetes resources with custom formatting for common types
+- **`get_k8s_resource`** - Fetch single Kubernetes resource with optional Go template formatting
+- **`get_k8s_metrics`** - Get CPU/memory metrics for nodes or pods (similar to kubectl top)
+- **`get_k8s_pod_logs`** - Get logs from Kubernetes pods (similar to kubectl logs)
+
+### Resources
 
 **Kubernetes Contexts** (`k8s://contexts`)
 
@@ -35,6 +44,15 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 - Returns JSON array with context name, cluster name, and current context indicator
 - Enables discovery of available contexts for use with the tools
 - Allows matching context names to cluster names for intuitive queries
+
+### Prompts
+
+**Memory Pressure Analysis** (`memory_pressure_analysis`)
+
+- Analyzes pods for memory pressure issues including high usage, exceeding requests, and OOM kills
+- Required argument: `context` (Kubernetes context)
+- Optional argument: `namespace` (defaults to all namespaces)
+- Guides assistant to use metrics and resource tools for comprehensive analysis
 
 ## Architecture
 
@@ -53,7 +71,7 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 
 - Central registration point for all MCP tools
 - Initializes resource mappers before registering tools
-- Currently registers: list_k8s_resources, get_k8s_resource, and get_k8s_metrics tools
+- Currently registers: list_k8s_resources, get_k8s_resource, get_k8s_metrics, and get_k8s_pod_logs tools
 
 **Kubernetes Client Layer** (`internal/k8s/`)
 
@@ -125,6 +143,23 @@ When implementing new features, start with architectural planning:
 - Consider consistency requirements across related operations (e.g., registration and lookup)
 - Anticipate potential edge cases and normalization needs
 
+### Modern Go Guidelines
+
+**Type Declarations**
+- Use `any` instead of `interface{}` for better readability
+- Example: `var content any` instead of `var content interface{}`
+- This applies to function parameters, return types, and variable declarations
+
+**Error Handling**
+- Avoid error variable shadowing in nested scopes
+- Use descriptive error variable names when redeclaring in inner scopes
+- Example: Use `parseErr` instead of redeclaring `err` in parsing operations
+
+**Safety-First Design**
+- All MCP tools are deliberately read-only to prevent accidental cluster modifications
+- Tools provide comprehensive data for analysis without mutation capabilities
+- Resource mappers extract relevant fields while preserving original structure
+
 ### Documentation-Driven Development
 
 - Write comprehensive comments for public APIs during implementation, not after
@@ -135,6 +170,19 @@ When implementing new features, start with architectural planning:
   - Add to the primary interface file (e.g., `client.go`, `mapper.go`) for functionality packages
   - Update package comments when the package's purpose changes
   - Format: `// Package <name> provides...` (2-3 lines describing the package's purpose)
+
+### Enhanced Resource Mapping
+
+**Pod Mapper Capabilities**
+- Extracts memory resource specifications (requests/limits) in standardized MiB units
+- Detects OOM kill events from container status history
+- Supports complex memory unit parsing (Mi, Gi, bytes, etc.)
+- Provides termination reason tracking for debugging
+
+**Memory Unit Conversion**
+- Standardizes all memory values to MiB for consistency
+- Handles Kubernetes memory formats: "128Mi", "1Gi", "512000000", "1000000k"
+- Enables direct numerical comparison and calculation
 
 ### Test-Driven Validation
 
