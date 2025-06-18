@@ -160,6 +160,13 @@ When implementing new features, start with architectural planning:
 - Tools provide comprehensive data for analysis without mutation capabilities
 - Resource mappers extract relevant fields while preserving original structure
 
+**MCP Server Logging**
+- **CRITICAL**: When using stdio transport, all logging MUST go to stderr only
+- The MCP protocol uses stdout for communication; any output to stdout will corrupt the protocol
+- Use `fmt.Fprintf(os.Stderr, ...)` or configure loggers to write to stderr
+- This applies to all debug messages, status updates, and error logging
+- Reference: MCP specification states servers can write logs to stderr while using stdout for protocol messages
+
 ### Documentation-Driven Development
 
 - Write comprehensive comments for public APIs during implementation, not after
