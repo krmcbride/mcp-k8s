@@ -33,6 +33,7 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 ### Tools
 
 - **`list_k8s_resources`** - List Kubernetes resources with custom formatting for common types
+- **`list_k8s_api_resources`** - List available Kubernetes API resource types (equivalent to kubectl api-resources)
 - **`get_k8s_resource`** - Fetch single Kubernetes resource with optional Go template formatting
 - **`get_k8s_metrics`** - Get CPU/memory metrics for nodes or pods (similar to kubectl top)
 - **`get_k8s_pod_logs`** - Get logs from Kubernetes pods (similar to kubectl logs)
@@ -80,11 +81,11 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 
 - Central registration point for all MCP tools
 - Initializes resource mappers before registering tools
-- Currently registers: list_k8s_resources, get_k8s_resource, get_k8s_metrics, and get_k8s_pod_logs tools
+- Currently registers: list_k8s_resources, list_k8s_api_resources, get_k8s_resource, get_k8s_metrics, and get_k8s_pod_logs tools
 
 **Kubernetes Client Layer** (`internal/k8s/`)
 
-- `client.go`: Kubernetes client factory with context switching support
+- `client.go`: Kubernetes client factory with context switching support and discovery client for API resource enumeration
 - `gvr.go`: GVK (GroupVersionKind) to GVR (GroupVersionResource) conversion using REST mapper
 
 **Resource Mapping System** (`internal/tools/mapper/`)
@@ -130,6 +131,26 @@ Each mapper extracts resource-specific fields (e.g., replica counts, status, net
 4. Add init() function to register the mapper
 5. Update integration test in `integration_test.go`
 6. **IMPORTANT**: Update the Resource Mappers list in this documentation
+
+## Adding New MCP Tools
+
+When adding new MCP tools, ensure documentation is updated in both locations:
+
+1. **Implementation Steps:**
+   - Create new tool file in `internal/tools/` (e.g., `new_tool.go`)
+   - Register the tool in `internal/tools/register.go`
+   - Add any new client functions to `internal/k8s/client.go` if needed
+   - Test with `make build` and `make test`
+
+2. **Documentation Updates (REQUIRED):**
+   - Add tool to the Tools section in `CLAUDE.md` (line ~35)
+   - Add tool to the Tools section in `README.md` (line ~17)
+   - Update the Tool Registration section in `CLAUDE.md` (line ~84)
+   - If adding new client capabilities, update Kubernetes Client Layer section (line ~88)
+
+3. **Validation:**
+   - Grep for the tool name across documentation files to ensure consistency
+   - Verify all references are updated and accurate
 
 ## Testing Strategy
 

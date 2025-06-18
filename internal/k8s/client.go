@@ -105,6 +105,36 @@ func GetClientsetForContext(k8sContext string) (kubernetes.Interface, error) {
 	return clientset, nil
 }
 
+// GetDiscoveryClientForContext creates a Kubernetes discovery client for the specified context.
+// A discovery client provides access to API resource discovery (equivalent to kubectl api-resources).
+//
+// Parameters:
+//   - k8sContext: The name of the kubeconfig context to use. If empty, uses the current context.
+//
+// Returns:
+//   - A discovery client interface for discovering available API resources
+//   - An error if the client creation fails (e.g., invalid context, connection issues)
+//
+// Example usage:
+//
+//	client, err := GetDiscoveryClientForContext("production")
+//	resources, err := client.ServerGroupsAndResources()
+func GetDiscoveryClientForContext(k8sContext string) (discovery.DiscoveryInterface, error) {
+	kubeConfig := getKubeConfigForContext(k8sContext)
+
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, enhanceContextError(err)
+	}
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return discoveryClient, nil
+}
+
 // Helper that creates both a dynamic client and REST mapper for a specific Kubernetes context.
 //
 // The function creates:
