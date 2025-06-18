@@ -108,6 +108,7 @@ Currently implemented mappers for:
 - Pod, Deployment, DaemonSet, StatefulSet, Job, CronJob (workloads)
 - Service, Ingress (networking)
 - Node (infrastructure)
+- Event (core/v1 and events.k8s.io/v1beta1) (cluster events)
 
 Each mapper extracts resource-specific fields (e.g., replica counts, status, networking details) rather than just name/namespace.
 
@@ -146,21 +147,25 @@ When implementing new features, start with architectural planning:
 ### Modern Go Guidelines
 
 **Type Declarations**
+
 - Use `any` instead of `interface{}` for better readability
 - Example: `var content any` instead of `var content interface{}`
 - This applies to function parameters, return types, and variable declarations
 
 **Error Handling**
+
 - Avoid error variable shadowing in nested scopes
 - Use descriptive error variable names when redeclaring in inner scopes
 - Example: Use `parseErr` instead of redeclaring `err` in parsing operations
 
 **Safety-First Design**
+
 - All MCP tools are deliberately read-only to prevent accidental cluster modifications
 - Tools provide comprehensive data for analysis without mutation capabilities
 - Resource mappers extract relevant fields while preserving original structure
 
 **MCP Server Logging**
+
 - **CRITICAL**: When using stdio transport, all logging MUST go to stderr only
 - The MCP protocol uses stdout for communication; any output to stdout will corrupt the protocol
 - Use `fmt.Fprintf(os.Stderr, ...)` or configure loggers to write to stderr
@@ -181,12 +186,14 @@ When implementing new features, start with architectural planning:
 ### Enhanced Resource Mapping
 
 **Pod Mapper Capabilities**
+
 - Extracts memory resource specifications (requests/limits) in standardized MiB units
 - Detects OOM kill events from container status history
 - Supports complex memory unit parsing (Mi, Gi, bytes, etc.)
 - Provides termination reason tracking for debugging
 
 **Memory Unit Conversion**
+
 - Standardizes all memory values to MiB for consistency
 - Handles Kubernetes memory formats: "128Mi", "1Gi", "512000000", "1000000k"
 - Enables direct numerical comparison and calculation
