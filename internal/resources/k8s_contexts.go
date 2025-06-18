@@ -24,7 +24,7 @@ func RegisterK8sContextsMCPResource(s *server.MCPServer) {
 // Resource schema
 func newK8sContextsMCPResource() mcp.Resource {
 	return mcp.NewResource("k8s://contexts", "k8s_contexts",
-		mcp.WithResourceDescription("List of available Kubernetes contexts from kubeconfig"),
+		mcp.WithResourceDescription("List of available Kubernetes contexts and cluster names from kubeconfig"),
 	)
 }
 
