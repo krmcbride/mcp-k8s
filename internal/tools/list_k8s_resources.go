@@ -20,6 +20,8 @@ const (
 	versionProperty       = "version"
 	kindProperty          = "kind"
 	fieldSelectorProperty = "fieldSelector"
+	limitProperty         = "limit"
+	continueProperty      = "continue"
 )
 
 type listK8sResourcesParams struct {
@@ -29,6 +31,8 @@ type listK8sResourcesParams struct {
 	Version       string
 	Kind          string
 	FieldSelector string
+	Limit         int64
+	Continue      string
 }
 
 func RegisterListK8sResourcesMCPTool(s *server.MCPServer) {
@@ -38,7 +42,7 @@ func RegisterListK8sResourcesMCPTool(s *server.MCPServer) {
 // Tool schema
 func newListK8sResourcesMCPTool() mcp.Tool {
 	return mcp.NewTool("list_k8s_resources",
-		mcp.WithDescription("List Kubernetes resources with optional server-side filtering"),
+		mcp.WithDescription("List Kubernetes resources with optional server-side filtering and pagination"),
 		mcp.WithString(contextProperty,
 			mcp.Description("The Kubernetes context to use."),
 			mcp.Required(),
@@ -58,6 +62,14 @@ func newListK8sResourcesMCPTool() mcp.Tool {
 		),
 		mcp.WithString(fieldSelectorProperty,
 			mcp.Description("Field selector to filter resources server-side. Examples: 'metadata.namespace!=default', 'status.phase=Running', 'spec.nodeName=node-1'. Multiple selectors can be comma-separated."),
+		),
+		// NOTE: The Event mapper, which contains a good number of fields, is about 120 tokens per event, so a default
+		// limit of 100 uses about half of the 25k MCP tool response token limit
+		mcp.WithNumber(limitProperty,
+			mcp.Description("Maximum number of resources to return per request. Use for pagination. Must be positive if provided. Defaults to 100."),
+		),
+		mcp.WithString(continueProperty,
+			mcp.Description("Continue token from previous paginated request. Used to retrieve the next page of results."),
 		),
 	)
 }
@@ -89,10 +101,15 @@ func listK8sResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to create dynamic client: %v", err)), nil
 	}
 
-	// Prepare list options with field selector
-	listOptions := metav1.ListOptions{}
+	// Prepare list options with field selector and pagination
+	listOptions := metav1.ListOptions{
+		Limit: params.Limit, // Always set limit (defaults to 100)
+	}
 	if params.FieldSelector != "" {
 		listOptions.FieldSelector = params.FieldSelector
+	}
+	if params.Continue != "" {
+		listOptions.Continue = params.Continue
 	}
 
 	// List resources
@@ -110,10 +127,35 @@ func listK8sResourcesHandler(ctx context.Context, request mcp.CallToolRequest) (
 	}
 
 	// Map to appropriate content structure
-	content := mapToK8sResourceListContent(list, gvk)
+	items := mapToK8sResourceListContent(list, gvk)
+
+	// Create response with pagination metadata
+	response := map[string]any{
+		"items": items,
+	}
+
+	// Add pagination metadata if available
+	metadata := map[string]any{}
+	hasMetadata := false
+
+	// Extract continue token from list metadata
+	if continueToken, found, _ := unstructured.NestedString(list.Object, "metadata", "continue"); found && continueToken != "" {
+		metadata["continue"] = continueToken
+		hasMetadata = true
+	}
+
+	// Extract remaining item count from list metadata
+	if remainingCount, found, _ := unstructured.NestedInt64(list.Object, "metadata", "remainingItemCount"); found {
+		metadata["remainingItemCount"] = remainingCount
+		hasMetadata = true
+	}
+
+	if hasMetadata {
+		response["metadata"] = metadata
+	}
 
 	// Return as JSON
-	return toJSONToolResult(content)
+	return toJSONToolResult(response)
 }
 
 func extractListK8sResourcesParams(request mcp.CallToolRequest) (*listK8sResourcesParams, error) {
@@ -127,6 +169,12 @@ func extractListK8sResourcesParams(request mcp.CallToolRequest) (*listK8sResourc
 		return nil, err
 	}
 
+	// Extract and validate limit (default to 100)
+	limit := request.GetFloat(limitProperty, 100)
+	if limit < 0 {
+		return nil, fmt.Errorf("limit must be positive, got %v", limit)
+	}
+
 	return &listK8sResourcesParams{
 		Context:       context,
 		Namespace:     request.GetString(namespaceProperty, metav1.NamespaceAll),
@@ -134,5 +182,7 @@ func extractListK8sResourcesParams(request mcp.CallToolRequest) (*listK8sResourc
 		Version:       request.GetString(versionProperty, "v1"),
 		Kind:          kind,
 		FieldSelector: request.GetString(fieldSelectorProperty, ""),
+		Limit:         int64(limit),
+		Continue:      request.GetString(continueProperty, ""),
 	}, nil
 }
