@@ -26,7 +26,7 @@ func init() {
 	)
 }
 
-func mapServiceResource(item unstructured.Unstructured) interface{} {
+func mapServiceResource(item unstructured.Unstructured) any {
 	service := ServiceListContent{
 		Name:      item.GetName(),
 		Namespace: item.GetNamespace(),
@@ -52,7 +52,7 @@ func mapServiceResource(item unstructured.Unstructured) interface{} {
 
 	// Extract ports (simplified - just show first port)
 	if ports, found, _ := unstructured.NestedSlice(item.Object, "spec", "ports"); found && len(ports) > 0 {
-		if portMap, ok := ports[0].(map[string]interface{}); ok {
+		if portMap, ok := ports[0].(map[string]any); ok {
 			if port, found, _ := unstructured.NestedInt64(portMap, "port"); found {
 				if protocol, found, _ := unstructured.NestedString(portMap, "protocol"); found {
 					service.Port = fmt.Sprintf("%d/%s", port, protocol)

@@ -26,7 +26,7 @@ func init() {
 	)
 }
 
-func mapIngressResource(item unstructured.Unstructured) interface{} {
+func mapIngressResource(item unstructured.Unstructured) any {
 	ingress := IngressListContent{
 		Name:      item.GetName(),
 		Namespace: item.GetNamespace(),
@@ -40,7 +40,7 @@ func mapIngressResource(item unstructured.Unstructured) interface{} {
 	// Extract hosts from rules
 	if rules, found, _ := unstructured.NestedSlice(item.Object, "spec", "rules"); found {
 		for _, rule := range rules {
-			if ruleMap, ok := rule.(map[string]interface{}); ok {
+			if ruleMap, ok := rule.(map[string]any); ok {
 				if host, found, _ := unstructured.NestedString(ruleMap, "host"); found && host != "" {
 					ingress.Hosts = append(ingress.Hosts, host)
 				}
@@ -52,7 +52,7 @@ func mapIngressResource(item unstructured.Unstructured) interface{} {
 	if lbIngress, found, _ := unstructured.NestedSlice(item.Object, "status", "loadBalancer", "ingress"); found {
 		var addresses []string
 		for _, lb := range lbIngress {
-			if lbMap, ok := lb.(map[string]interface{}); ok {
+			if lbMap, ok := lb.(map[string]any); ok {
 				if ip, found, _ := unstructured.NestedString(lbMap, "ip"); found && ip != "" {
 					addresses = append(addresses, ip)
 				}

@@ -23,7 +23,7 @@ func init() {
 	)
 }
 
-func mapStatefulSetResource(item unstructured.Unstructured) interface{} {
+func mapStatefulSetResource(item unstructured.Unstructured) any {
 	statefulSet := StatefulSetListContent{
 		Name:      item.GetName(),
 		Namespace: item.GetNamespace(),

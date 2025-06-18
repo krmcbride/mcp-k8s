@@ -24,7 +24,7 @@ func init() {
 	)
 }
 
-func mapJobResource(item unstructured.Unstructured) interface{} {
+func mapJobResource(item unstructured.Unstructured) any {
 	job := JobListContent{
 		Name:      item.GetName(),
 		Namespace: item.GetNamespace(),

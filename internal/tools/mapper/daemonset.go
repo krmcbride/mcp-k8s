@@ -25,7 +25,7 @@ func init() {
 	)
 }
 
-func mapDaemonSetResource(item unstructured.Unstructured) interface{} {
+func mapDaemonSetResource(item unstructured.Unstructured) any {
 	daemonSet := DaemonSetListContent{
 		Name:      item.GetName(),
 		Namespace: item.GetNamespace(),

@@ -29,7 +29,7 @@ func init() {
 	)
 }
 
-func mapNodeResource(item unstructured.Unstructured) interface{} {
+func mapNodeResource(item unstructured.Unstructured) any {
 	node := NodeListContent{
 		Name: item.GetName(),
 		// Nodes don't have namespaces
@@ -38,7 +38,7 @@ func mapNodeResource(item unstructured.Unstructured) interface{} {
 	// Extract node status
 	if conditions, found, _ := unstructured.NestedSlice(item.Object, "status", "conditions"); found {
 		for _, condition := range conditions {
-			if condMap, ok := condition.(map[string]interface{}); ok {
+			if condMap, ok := condition.(map[string]any); ok {
 				if condType, found, _ := unstructured.NestedString(condMap, "type"); found && condType == "Ready" {
 					if status, found, _ := unstructured.NestedString(condMap, "status"); found {
 						if status == "True" {
@@ -77,7 +77,7 @@ func mapNodeResource(item unstructured.Unstructured) interface{} {
 	// Extract IP addresses
 	if addresses, found, _ := unstructured.NestedSlice(item.Object, "status", "addresses"); found {
 		for _, address := range addresses {
-			if addrMap, ok := address.(map[string]interface{}); ok {
+			if addrMap, ok := address.(map[string]any); ok {
 				if addrType, found, _ := unstructured.NestedString(addrMap, "type"); found {
 					if addr, found, _ := unstructured.NestedString(addrMap, "address"); found {
 						switch addrType {

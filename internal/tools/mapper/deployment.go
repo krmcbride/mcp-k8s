@@ -25,7 +25,7 @@ func init() {
 	)
 }
 
-func mapDeploymentResource(item unstructured.Unstructured) interface{} {
+func mapDeploymentResource(item unstructured.Unstructured) any {
 	deployment := DeploymentListContent{
 		Name:      item.GetName(),
 		Namespace: item.GetNamespace(),

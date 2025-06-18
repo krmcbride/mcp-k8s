@@ -8,7 +8,7 @@ import (
 )
 
 // Mock mapper for testing
-func mockMapper(item unstructured.Unstructured) interface{} {
+func mockMapper(item unstructured.Unstructured) any {
 	return "mocked"
 }
 
@@ -245,7 +245,7 @@ func TestMapperFunctionality(t *testing.T) {
 	resourceMappers = make(map[schema.GroupVersionKind]ResourceMapper)
 
 	// Create a mapper that returns the item's name
-	nameMapper := func(item unstructured.Unstructured) interface{} {
+	nameMapper := func(item unstructured.Unstructured) any {
 		return item.GetName()
 	}
 
@@ -273,8 +273,8 @@ func TestEdgeCases(t *testing.T) {
 	resourceMappers = make(map[schema.GroupVersionKind]ResourceMapper)
 
 	t.Run("overwrite existing mapper", func(t *testing.T) {
-		mapper1 := func(item unstructured.Unstructured) interface{} { return "mapper1" }
-		mapper2 := func(item unstructured.Unstructured) interface{} { return "mapper2" }
+		mapper1 := func(item unstructured.Unstructured) any { return "mapper1" }
+		mapper2 := func(item unstructured.Unstructured) any { return "mapper2" }
 
 		// Register first mapper
 		Register(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "test"}, mapper1)
