@@ -20,6 +20,7 @@ This is an MCP (Model Context Protocol) server that provides tools for interacti
 ### MCP Development
 
 - `make mcp-shell` - Run the MCP server interactively with mcptools shell for testing
+- **MCP Server Testing**: Use `make mcp-shell` for interactive testing rather than piping JSON-RPC directly to the server, which will hang waiting for a persistent connection
 
 ### CI Commands
 
@@ -144,6 +145,16 @@ When implementing new features, start with architectural planning:
 - Consider consistency requirements across related operations (e.g., registration and lookup)
 - Anticipate potential edge cases and normalization needs
 
+**API Research Protocol**
+- Use Context7 proactively to research exact API structures before implementation
+- For unfamiliar libraries or APIs, always verify field names, types, and methods
+- Don't assume API structures - verify through documentation before coding
+
+**Incremental Development**
+- Break complex features into smaller, testable increments
+- Validate each component with `make build` and `make test` before proceeding
+- Test intermediate states rather than implementing entire features before first validation
+
 ### Modern Go Guidelines
 
 **Type Declarations**
@@ -163,6 +174,19 @@ When implementing new features, start with architectural planning:
 - All MCP tools are deliberately read-only to prevent accidental cluster modifications
 - Tools provide comprehensive data for analysis without mutation capabilities
 - Resource mappers extract relevant fields while preserving original structure
+
+**Resource and Performance Considerations**
+
+- Consider MCP token limits when designing features (25k response limit)
+- Account for memory usage patterns, especially for large resource collections
+- Design with pagination and chunking in mind for scalable operations
+- Document resource usage implications (e.g., "100 Events ≈ 12k tokens")
+
+**Backward Compatibility**
+
+- When adding new optional parameters, ensure existing usage patterns remain functional
+- Test that new features don't break existing tool behavior
+- Design APIs to be extensible without breaking changes
 
 **MCP Server Logging**
 
