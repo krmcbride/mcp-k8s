@@ -65,13 +65,14 @@ strategy:
 
 **Integration with Makefile:**
 
-- `make test-ci`: Runs tests with coverage output
+- `make test-ci`: Runs tests with coverage output (overrides vendor mode)
 - `make format-ci`: Checks formatting without modifying files
-- `make lint-ci`: Runs linters (delegates to `make lint`)
-- `make build-ci`: Cross-platform build validation
+- `make lint-ci`: Runs linters (overrides vendor mode)
+- `make build-ci`: Cross-platform build validation (overrides vendor mode)
 
 **Environment Variables:**
 
 - `GOOS` and `GOARCH`: Set by matrix for cross-compilation
-- `GOFLAGS="-mod=vendor"`: Automatically set via Makefile export
+- `GOFLAGS=""`: CI targets override vendor mode to leverage Go module cache
+- Local development still uses `GOFLAGS="-mod=vendor"` for offline builds
 

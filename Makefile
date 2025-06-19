@@ -128,8 +128,8 @@ build: ## Build the agent
 
 .PHONY: test-ci
 test-ci: ## Run tests in CI
-	go test -coverprofile=coverage.out ./...
-	go tool cover -func=coverage.out
+	GOFLAGS="" go test -coverprofile=coverage.out ./...
+	GOFLAGS="" go tool cover -func=coverage.out
 
 .PHONY: format-ci
 format-ci: install-gofumpt install-goimports-reviser ## Check code formatting in CI
@@ -150,8 +150,10 @@ format-ci: install-gofumpt install-goimports-reviser ## Check code formatting in
 	@echo "All files are properly formatted!"
 
 .PHONY: lint-ci
-lint-ci: lint ## Run linters in CI (same as lint)
+lint-ci: install-golangci-lint ## Run linters in CI
+	GOFLAGS="" $(GOLANGCI_LINT) run
 
 .PHONY: build-ci
-build-ci: build ## Build the MCP server in CI
+build-ci: ## Build the MCP server in CI
+	GOFLAGS="" CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o dist/server cmd/server/main.go
 

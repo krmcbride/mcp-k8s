@@ -46,6 +46,9 @@ jobs:
           go-version-file: "go.mod"
           cache: true
 
+      - name: Install dependencies
+        run: go mod download
+
       - name: Check code formatting
         run: make format-ci
 
@@ -70,6 +73,9 @@ jobs:
         with:
           go-version-file: "go.mod"
           cache: true
+
+      - name: Install dependencies
+        run: go mod download
 
       - name: Build for ${{ matrix.os }}/${{ matrix.arch }}
         run: |
