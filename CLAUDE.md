@@ -137,12 +137,14 @@ Each mapper extracts resource-specific fields (e.g., replica counts, status, net
 When adding new MCP tools, ensure documentation is updated in both locations:
 
 1. **Implementation Steps:**
+
    - Create new tool file in `internal/tools/` (e.g., `new_tool.go`)
    - Register the tool in `internal/tools/register.go`
    - Add any new client functions to `internal/k8s/client.go` if needed
    - Test with `make build` and `make test`
 
 2. **Documentation Updates (REQUIRED):**
+
    - Add tool to the Tools section in `CLAUDE.md` (line ~35)
    - Add tool to the Tools section in `README.md` (line ~17)
    - Update the Tool Registration section in `CLAUDE.md` (line ~84)
@@ -290,8 +292,179 @@ When implementing related operations (like mapper registration and lookup):
 - Test that different input variations (case, format) work consistently
 - Verify that registration and retrieval use identical key generation logic
 
-## Dependencies
+## Dependency Management
+
+### Vendored Dependencies
+
+This project uses Go vendoring to provide direct access to dependency source code:
+
+- **Vendor Directory**: `vendor/` contains all dependency source code locally
+- **Git Ignore**: Vendor directory is excluded from version control
+- **Makefile Integration**: All Go commands use `GOFLAGS="-mod=vendor"` automatically
+- **Development Workflow**: Run `go mod vendor` after dependency changes to update vendor/
+
+**Claude Development Benefits:**
+
+- Can read actual source code from `vendor/k8s.io/client-go/` instead of relying on external documentation
+- Enables precise API research by examining actual method signatures and implementations
+- Provides accurate error handling patterns and usage examples directly from source
+- **IMPORTANT**: Always prefer reading vendor source code over guessing API structures
+
+**Vendor Maintenance:**
+
+- Run `go mod vendor` after updating `go.mod`
+- Vendor directory is automatically excluded from git commits
+- All build/test/lint commands automatically use vendored dependencies
+
+### Key Dependencies
 
 - `k8s.io/client-go`: Kubernetes Go client library
 - `k8s.io/apimachinery`: Core Kubernetes types and utilities
 - `github.com/mark3labs/mcp-go`: MCP protocol implementation
+
+## Enhanced MCP Server Development
+
+### MCP Tool Development Patterns
+
+**Tool Structure Template:**
+
+```go
+func NewToolName(serverName string) mcp.Tool {
+    return mcp.NewTool(
+        serverName+"_tool_name",
+        "Description of what this tool does",
+        map[string]mcp.ToolInputSchema{
+            "required_param": {
+                Type: "string",
+                Description: "Enhanced description mentioning kubeconfig://contexts for context discovery",
+            },
+        },
+        handleToolName,
+    )
+}
+```
+
+**Error Handling Best Practices:**
+
+- Always enhance context-related errors with MCP resource guidance
+- Use structured error responses with actionable suggestions
+- Log errors to stderr only (never stdout due to stdio transport)
+- Provide context about which MCP resources can help resolve issues
+
+**Interactive Testing Workflow:**
+
+1. Use `make mcp-shell` for interactive tool testing
+2. Test edge cases like invalid contexts, missing resources
+3. Verify error messages guide users to appropriate MCP resources
+4. Validate tool descriptions are clear and actionable
+
+**Tool Registration Pattern:**
+
+- Register tools in `internal/tools/register.go`
+- Update both CLAUDE.md and README.md documentation
+- Add integration tests for new tools
+- Follow naming convention: `{verb}_k8s_{resource_type}`
+
+### MCP Resource Development
+
+**Resource Naming Convention:**
+
+- Use descriptive URI schemes: `kubeconfig://contexts`
+- Provide clear resource descriptions in registration
+- Enable resource discovery through intuitive naming
+
+**Resource Implementation Guidelines:**
+
+- Return structured data suitable for Claude analysis
+- Include metadata that helps with decision making
+- Design resources to reduce need for external commands
+- Document resource schema and expected usage patterns
+
+### MCP Prompt Development
+
+**Prompt Structure Requirements:**
+
+- Required parameters must be clearly specified
+- Optional parameters should have sensible defaults
+- Provide clear guidance on what analysis to perform
+- Structure prompts to guide systematic investigation
+
+**Analysis Prompt Pattern:**
+
+```go
+// Guides assistant through systematic analysis
+// Required: context, optional: namespace
+// Provides step-by-step investigation approach
+```
+
+## Kubernetes Client Architecture
+
+### Client Type Selection Guide
+
+**Discovery Client** (`internal/k8s/client.go:GetDiscoveryClientForContext`)
+
+- **Use For**: API resource discovery, server version info, available API groups
+- **Examples**: `list_k8s_api_resources` tool, API capability checking
+- **Methods**: `ServerGroupsAndResources()`, `ServerVersion()`
+- **Performance**: Lightweight, cached API discovery
+
+**Dynamic Client** (`dynamic.NewForConfig`)
+
+- **Use For**: Generic resource operations, CRD support, unstructured data
+- **Examples**: `list_k8s_resources`, `get_k8s_resource` tools
+- **Methods**: `Resource().List()`, `Resource().Get()`
+- **Benefits**: Works with any resource type without code generation
+
+**REST Client** (`rest.RESTClientFor`)
+
+- **Use For**: Custom API endpoints, non-standard operations
+- **Examples**: Metrics API calls, custom resource endpoints
+- **Methods**: Direct HTTP operations with Kubernetes authentication
+- **Use Cases**: When dynamic client doesn't provide needed functionality
+
+**Typed Clients** (e.g., `kubernetes.NewForConfig`)
+
+- **Use For**: Standard Kubernetes resources with strong typing
+- **Examples**: When you need compile-time type safety
+- **Trade-offs**: Requires updates for API changes, doesn't support CRDs
+- **Current Usage**: Not used in this project (prefer dynamic client)
+
+### Client Creation Patterns
+
+**Context-Aware Client Factory:**
+
+```go
+// Always enhance context errors with MCP resource guidance
+func GetClientForContext(context string) (dynamic.Interface, error) {
+    config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+        // ... config loading
+    ).ClientConfig()
+    if err != nil {
+        return nil, enhanceContextError(err) // Guide to kubeconfig://contexts
+    }
+    return dynamic.NewForConfig(config)
+}
+```
+
+**Error Enhancement Pattern:**
+
+- Detect context-related errors in client creation
+- Append guidance about `kubeconfig://contexts` MCP resource
+- Provide actionable suggestions instead of raw errors
+- Help users discover available contexts through MCP instead of kubectl
+
+### GVK to GVR Conversion
+
+**REST Mapper Usage:**
+
+- Use discovery client to build REST mapper
+- Handle both built-in resources and CRDs
+- Cache mapper for performance in repeated operations
+- Gracefully handle API discovery failures
+
+**Kind Resolution Strategy:**
+
+1. Try exact Kind match first
+2. Fall back to case-insensitive lookup
+3. Use resource mappers for common variations
+4. Provide clear error messages for unrecognized kinds
