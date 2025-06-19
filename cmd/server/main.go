@@ -16,9 +16,15 @@ import (
 	"github.com/krmcbride/mcp-k8s/internal/tools"
 )
 
+// Build-time variables set by goreleaser
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 const (
-	serverName    = "mcp-k8s"
-	serverVersion = "0.0.0-dev"
+	serverName = "mcp-k8s"
 )
 
 // WARN: only log to stderr to prevent interference with stdio transport
@@ -47,14 +53,16 @@ func main() {
 	}
 
 	if showVersion {
-		fmt.Printf("%s %s\n", serverName, serverVersion)
+		fmt.Printf("%s %s\n", serverName, version)
+		fmt.Printf("  commit: %s\n", commit)
+		fmt.Printf("  built: %s\n", date)
 		os.Exit(0)
 	}
 
 	// Initialize the MCP server
 	s := server.NewMCPServer(
 		serverName,
-		serverVersion,
+		version,
 		server.WithInstructions(`
 This MCP server provides safe, read-only access to Kubernetes clusters through structured tools and resources.
 
@@ -103,7 +111,7 @@ All tools support CRDs and custom resources automatically through dynamic client
 
 	// Start the server in a goroutine
 	go func() {
-		fmt.Fprintf(os.Stderr, "Starting MCP server %s %s\n", serverName, serverVersion)
+		fmt.Fprintf(os.Stderr, "Starting MCP server %s %s\n", serverName, version)
 		if err := server.ServeStdio(s); err != nil {
 			errChan <- err
 		}

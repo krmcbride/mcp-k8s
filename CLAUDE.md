@@ -131,6 +131,7 @@ Each mapper extracts resource-specific fields (e.g., replica counts, status, net
 4. Add init() function to register the mapper
 5. Update integration test in `integration_test.go`
 6. **IMPORTANT**: Update the Resource Mappers list in this documentation
+7. **Update `CHANGELOG.md`** under `[Unreleased]` section with the new mapper
 
 ## Adding New MCP Tools
 
@@ -149,6 +150,7 @@ When adding new MCP tools, ensure documentation is updated in both locations:
    - Add tool to the Tools section in `README.md` (line ~17)
    - Update the Tool Registration section in `CLAUDE.md` (line ~84)
    - If adding new client capabilities, update Kubernetes Client Layer section (line ~88)
+   - **Update `CHANGELOG.md`** under `[Unreleased]` section with the new feature
 
 3. **Validation:**
    - Grep for the tool name across documentation files to ensure consistency
@@ -181,4 +183,3 @@ For comprehensive development guidance, see the following detailed guides:
 @docs/mcp-server-development.md
 
 @docs/kubernetes-client-architecture.md
-

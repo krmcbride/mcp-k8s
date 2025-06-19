@@ -76,3 +76,30 @@ strategy:
 - `GOFLAGS=""`: CI targets override vendor mode to leverage Go module cache
 - Local development still uses `GOFLAGS="-mod=vendor"` for offline builds
 
+## Release Process
+
+**Manual Release Workflow** (`.github/workflows/release.yml`)
+
+- **Trigger**: Manual workflow dispatch with semantic version tag input
+- **Pre-release validation**: `make format-ci`, `make test-ci`, `make lint-ci`
+- **Tag creation**: Automated git tag creation and push
+- **Release automation**: GoReleaser handles cross-platform builds and GitHub release
+
+**Release Checklist:**
+
+1. **Update CHANGELOG.md**:
+
+   - Move items from `[Unreleased]` to new version section
+   - Add release date: `## [1.0.0] - 2025-01-15`
+   - Create new empty `[Unreleased]` section
+
+2. **Trigger Release**:
+
+   - GitHub Actions → "Release" workflow → "Run workflow"
+   - Enter semantic version tag (e.g., `v1.0.0`)
+
+3. **Post-Release**:
+   - Verify GitHub release created with binaries
+   - Update any external documentation if needed
+
+**IMPORTANT**: Always maintain `CHANGELOG.md` manually - GoReleaser only generates GitHub release notes from commits.
