@@ -55,6 +55,30 @@ func main() {
 	s := server.NewMCPServer(
 		serverName,
 		serverVersion,
+		server.WithInstructions(`
+This MCP server provides safe, read-only access to Kubernetes clusters through structured tools and resources.
+
+**Key Features:**
+- Safe by design: All operations are read-only, no cluster modifications possible
+- No kubectl required: Direct API access through kubeconfig contexts
+- Context discovery: Use 'kubeconfig://contexts' MCP resource to find available clusters
+- Comprehensive analysis: Built-in prompts for memory pressure and workload instability analysis
+
+**Available Tools:**
+- list_k8s_resources: List and filter Kubernetes resources with smart formatting
+- list_k8s_api_resources: Discover available API resource types (like kubectl api-resources)
+- get_k8s_resource: Fetch individual resources with optional Go template formatting
+- get_k8s_metrics: Get CPU/memory metrics for nodes and pods (like kubectl top)
+- get_k8s_pod_logs: Retrieve pod logs with filtering options
+
+**Context Usage:**
+Instead of running kubectl commands, use the kubeconfig://contexts MCP resource to discover available cluster contexts. This server resolves cluster aliases (like 'prod', 'staging') to actual kubeconfig contexts automatically.
+
+**Analysis Prompts:**
+- memory_pressure_analysis: Systematic analysis of pod memory usage and OOM issues
+- workload_instability_analysis: Investigation of Events and logs for instability patterns
+
+All tools support CRDs and custom resources automatically through dynamic client discovery.`),
 		server.WithToolCapabilities(false),
 		server.WithResourceCapabilities(false, false),
 		server.WithPromptCapabilities(false),
