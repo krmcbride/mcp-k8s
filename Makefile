@@ -34,7 +34,7 @@ GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 MCPTOOLS = $(LOCALBIN)/mcptools
 
 ## Tool Versions
-GOIMPORTS_REVISER_VERSION = v3.6.4
+GOIMPORTS_REVISER_VERSION = v3.9.1
 GOFUMPT_VERSION = v0.8.0
 GOLANGCI_LINT_VERSION = v2.1.6
 MCPTOOLS_VERSION = v0.7.1
@@ -99,13 +99,11 @@ fmt: gofumpt goimports-reviser ## Format code
 
 .PHONY: gofumpt
 gofumpt: install-gofumpt ## Format code with gofumpt (strict formatting)
-	@$(foreach FILE, $(shell find . -name "*.go" -not -path "**/vendor/*"), \
-		$(GOFUMPT) -w $(FILE);)
+	$(GOFUMPT) -w ./cmd ./internal
 
 .PHONY: goimports-reviser
 goimports-reviser: install-goimports-reviser ## Format code and fix imports.
-	@$(foreach FILE, $(shell find . -name "*.go" -not -path "**/vendor/*"), \
-		$(GOIMPORTS_REVISER) $(GOIMPORTS_REVISER_ARGS) $(FILE);)
+	$(GOIMPORTS_REVISER) $(GOIMPORTS_REVISER_ARGS) -recursive ./cmd ./internal
 
 .PHONY: lint
 lint: install-golangci-lint ## Run golangci-lint against code.
@@ -134,14 +132,26 @@ test-ci: ## Run tests in CI
 	go tool cover -func=coverage.out
 
 .PHONY: format-ci
-format-ci: install-golangci-lint ## Check code formatting in CI
-	$(GOLANGCI_LINT) run --disable-all --enable=gofmt,goimports
+format-ci: install-gofumpt install-goimports-reviser ## Check code formatting in CI
+	@echo "Checking gofumpt..."
+	@FILES=$$($(GOFUMPT) -l ./cmd ./internal); \
+	if [ -n "$$FILES" ]; then \
+		echo "Error: The following files need formatting (run 'make fmt'):"; \
+		echo "$$FILES"; \
+		exit 1; \
+	fi
+	@echo "Checking goimports-reviser..."
+	@$(GOIMPORTS_REVISER) $(GOIMPORTS_REVISER_ARGS) -list-diff -recursive ./cmd ./internal >/dev/null 2>&1; \
+	if [ $$? -ne 0 ]; then \
+		echo "Error: Files need import formatting (run 'make fmt')"; \
+		$(GOIMPORTS_REVISER) $(GOIMPORTS_REVISER_ARGS) -list-diff -recursive ./cmd ./internal 2>/dev/null || true; \
+		exit 1; \
+	fi
+	@echo "All files are properly formatted!"
 
 .PHONY: lint-ci
-lint-ci: install-golangci-lint ## Run linters in CI
-	$(GOLANGCI_LINT) run
+lint-ci: lint ## Run linters in CI (same as lint)
 
 .PHONY: build-ci
-build-ci: generate-ci build ## Build the MCP server
-
+build-ci: build ## Build the MCP server in CI
 

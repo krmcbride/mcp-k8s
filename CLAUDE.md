@@ -322,6 +322,103 @@ This project uses Go vendoring to provide direct access to dependency source cod
 - `k8s.io/apimachinery`: Core Kubernetes types and utilities
 - `github.com/mark3labs/mcp-go`: MCP protocol implementation
 
+### Tool Version Management
+
+**Systematic Update Process:**
+
+1. **Check Latest Versions:**
+   - Use WebFetch tool to check GitHub releases pages for each tool
+   - Target repositories: `incu6us/goimports-reviser`, `mvdan/gofumpt`, `golangci/golangci-lint`, `f/mcptools`
+   - Look for latest release tags (e.g., v3.9.1, v0.8.0, v2.1.6)
+
+2. **Update Makefile Versions:**
+   - Update version constants in `Makefile` lines ~37-40
+   - Verify package paths are correct (e.g., golangci-lint path changes between v1 and v2)
+   - Test that download URLs work by cleaning `bin/` and running make targets
+
+3. **Validation Process:**
+   - Run `rm -rf bin/*` to force fresh downloads
+   - Test `make format-ci` and `make lint-ci` to ensure compatibility
+   - Check for deprecated flags or changed behavior in newer versions
+   - Run `make build` and `make test` to ensure everything still works
+
+4. **Documentation:**
+   - Update this section if tool behavior significantly changes
+   - Note any breaking changes or new features in commit messages
+
+**Tool-Specific Notes:**
+- **goimports-reviser**: v3.9.1+ is more verbose but stricter about import formatting
+- **gofumpt**: v0.8.0+ requires Go 1.23+ and includes new formatting rules
+- **golangci-lint**: v2.x series has different package paths and configuration format
+
+## GitHub Actions CI Best Practices
+
+### **Workflow Trigger Patterns**
+
+**Current Setup (Recommended):**
+```yaml
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+```
+
+**Benefits:**
+- **PR Validation**: Catches issues before merge via required status checks
+- **Post-merge Verification**: Ensures main branch health after merge
+- **Branch Protection**: Enables "Require status checks to pass before merging"
+
+**Alternative Patterns:**
+- **PR-only**: `pull_request` only - saves CI resources but no post-merge validation
+- **Push-only**: `push` only - validates main branch but not PRs before merge
+- **Scheduled**: Add `schedule: cron: '0 2 * * *'` for nightly builds
+
+### **Matrix Build Strategy**
+
+**Current Cross-Platform Matrix:**
+```yaml
+strategy:
+  matrix:
+    os: [linux, darwin, windows]
+    arch: [amd64, arm64]
+    exclude:
+      - os: windows
+        arch: arm64
+```
+
+**Rationale:**
+- **linux/amd64**: Primary development and CI platform
+- **darwin/amd64+arm64**: macOS Intel and Apple Silicon support
+- **windows/amd64**: Windows compatibility
+- **Exclude windows/arm64**: Uncommon deployment target
+
+### **Job Dependencies and Gates**
+
+**ci-success Job Pattern:**
+- Use `needs: [test, lint, build]` to wait for all required jobs
+- Use `if: always()` to run even if some jobs fail
+- Check individual job results with `needs.jobname.result`
+- Provides single status check for branch protection rules
+
+**Best Practices:**
+- **Fail Fast**: Set `fail-fast: false` in matrix to see all platform failures
+- **Caching**: Use `cache: true` in `setup-go` for faster dependency downloads
+- **Permissions**: Use minimal `contents: read` permissions
+- **Timeouts**: Add `timeout-minutes: 10` to prevent stuck jobs
+
+### **CI Target Usage**
+
+**Integration with Makefile:**
+- `make test-ci`: Runs tests with coverage output
+- `make format-ci`: Checks formatting without modifying files
+- `make lint-ci`: Runs linters (delegates to `make lint`)
+- `make build-ci`: Cross-platform build validation
+
+**Environment Variables:**
+- `GOOS` and `GOARCH`: Set by matrix for cross-compilation
+- `GOFLAGS="-mod=vendor"`: Automatically set via Makefile export
+
 ## Enhanced MCP Server Development
 
 ### MCP Tool Development Patterns
