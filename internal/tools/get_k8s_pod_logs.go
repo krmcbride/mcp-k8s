@@ -31,7 +31,7 @@ func RegisterGetK8sPodLogsMCPTool(s *server.MCPServer) {
 
 // Tool schema
 func newGetK8sPodLogsMCPTool() mcp.Tool {
-	return mcp.NewTool("get_k8s_pod_logs",
+	return mcp.NewTool("get_k8s_pod_logs", readOnlyToolOptions(
 		mcp.WithDescription("Get logs from a Kubernetes pod, similar to kubectl logs"),
 		mcp.WithString(contextProperty,
 			mcp.Description("The Kubernetes context to use. To discover available contexts or resolve cluster aliases use the kubeconfig://contexts MCP resource."),
@@ -60,7 +60,7 @@ func newGetK8sPodLogsMCPTool() mcp.Tool {
 		mcp.WithBoolean("previous",
 			mcp.Description("Return logs from the previous terminated container instance."),
 		),
-	)
+	)...)
 }
 
 // Tool handler

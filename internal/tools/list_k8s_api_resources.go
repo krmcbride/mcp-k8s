@@ -35,7 +35,7 @@ func RegisterListK8sAPIResourcesMCPTool(s *server.MCPServer) {
 
 // Tool schema
 func newListK8sAPIResourcesMCPTool() mcp.Tool {
-	return mcp.NewTool("list_k8s_api_resources",
+	return mcp.NewTool("list_k8s_api_resources", readOnlyToolOptions(
 		mcp.WithDescription("List available Kubernetes API resources (equivalent to `kubectl api-resources`)"),
 		mcp.WithString(apiResourcesContextProperty,
 			mcp.Description("The Kubernetes context to use. To discover available contexts or resolve cluster aliases use the kubeconfig://contexts MCP resource."),
@@ -44,7 +44,7 @@ func newListK8sAPIResourcesMCPTool() mcp.Tool {
 		mcp.WithString(apiResourcesGroupProperty,
 			mcp.Description("Filter by API group. If not specified, returns resources from all groups."),
 		),
-	)
+	)...)
 }
 
 // Tool handler

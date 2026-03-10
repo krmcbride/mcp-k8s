@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+- Explicit MCP tool annotations marking Kubernetes tools as read-only and idempotent
+
+## [0.1.0] - 2025-06-19
+
+### Added
+
 - Initial MCP (Model Context Protocol) server implementation for Kubernetes operations
 - Kubernetes resource listing with custom formatting (`list_k8s_resources`)
 - Kubernetes API resource discovery (`list_k8s_api_resources`)
@@ -23,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automated release workflow with GoReleaser
 
 ### Documentation
+
 - Comprehensive CLAUDE.md with modular documentation structure
 - Development best practices and guidelines
 - CI/CD documentation and patterns
@@ -30,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kubernetes client architecture documentation
 
 ### Development
+
 - Makefile with development, testing, and CI targets
 - golangci-lint, gofumpt, and goimports-reviser integration
 - Interactive MCP testing with mcptools

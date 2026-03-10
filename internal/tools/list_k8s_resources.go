@@ -41,7 +41,7 @@ func RegisterListK8sResourcesMCPTool(s *server.MCPServer) {
 
 // Tool schema
 func newListK8sResourcesMCPTool() mcp.Tool {
-	return mcp.NewTool("list_k8s_resources",
+	return mcp.NewTool("list_k8s_resources", readOnlyToolOptions(
 		mcp.WithDescription("List Kubernetes resources with optional server-side filtering and pagination"),
 		mcp.WithString(contextProperty,
 			mcp.Description("The Kubernetes context to use. To discover available contexts or resolve cluster aliases use the kubeconfig://contexts MCP resource."),
@@ -71,7 +71,7 @@ func newListK8sResourcesMCPTool() mcp.Tool {
 		mcp.WithString(continueProperty,
 			mcp.Description("Continue token from previous paginated request. Used to retrieve the next page of results."),
 		),
-	)
+	)...)
 }
 
 // Tool handler

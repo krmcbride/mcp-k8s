@@ -52,7 +52,7 @@ func RegisterGetK8sMetricsMCPTool(s *server.MCPServer) {
 
 // Tool schema
 func newGetK8sMetricsMCPTool() mcp.Tool {
-	return mcp.NewTool("get_k8s_metrics",
+	return mcp.NewTool("get_k8s_metrics", readOnlyToolOptions(
 		mcp.WithDescription("Get Kubernetes resource metrics (CPU/memory usage) for nodes or pods, similar to kubectl top"),
 		mcp.WithString(contextProperty,
 			mcp.Description("The Kubernetes context to use. To discover available contexts or resolve cluster aliases use the kubeconfig://contexts MCP resource."),
@@ -71,7 +71,7 @@ func newGetK8sMetricsMCPTool() mcp.Tool {
 		mcp.WithBoolean("sum",
 			mcp.Description("When listing multiple resources, include a TOTAL entry with the sum of all CPU and memory usage."),
 		),
-	)
+	)...)
 }
 
 // Tool handler

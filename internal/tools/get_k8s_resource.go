@@ -36,7 +36,7 @@ func RegisterGetK8sResourceMCPTool(s *server.MCPServer) {
 
 // Tool schema
 func newGetK8sResourceMCPTool() mcp.Tool {
-	return mcp.NewTool("get_k8s_resource",
+	return mcp.NewTool("get_k8s_resource", readOnlyToolOptions(
 		mcp.WithDescription("Get a single Kubernetes resource with optional Go template formatting"),
 		mcp.WithString(contextProperty,
 			mcp.Description("The Kubernetes context to use. To discover available contexts or resolve cluster aliases use the kubeconfig://contexts MCP resource."),
@@ -62,7 +62,7 @@ func newGetK8sResourceMCPTool() mcp.Tool {
 		mcp.WithString(goTemplateProperty,
 			mcp.Description("Optional Go template expression for formatting output (e.g., '{{.metadata.name}}: {{.status.phase}}')."),
 		),
-	)
+	)...)
 }
 
 // Tool handler
